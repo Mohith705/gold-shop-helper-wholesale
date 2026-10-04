@@ -73,3 +73,6 @@ CREATE TABLE wholesale_transactions (
   invoice_number SERIAL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+ALTER TABLE gold_transactions ADD COLUMN image_url TEXT;
+ALTER TABLE wholesale_transactions ADD COLUMN image_url TEXT;
+-- You will also need to create a Supabase Storage bucket named 'images' and make it public.

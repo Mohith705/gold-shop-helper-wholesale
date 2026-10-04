@@ -4,6 +4,7 @@ import { StockItem } from '@/types'
 import { useState } from 'react'
 import { PlusCircle, Package } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
+import Link from 'next/link'
 
 export function StockDashboard({ initialStock }: { initialStock: StockItem[] }) {
   const [stock, setStock] = useState<StockItem[]>(initialStock)
@@ -93,6 +94,27 @@ export function StockDashboard({ initialStock }: { initialStock: StockItem[] }) 
         </form>
       )}
 
+      {stock.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-4">
+          <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 p-5 rounded-2xl border border-amber-200/60 shadow-sm flex flex-col justify-center">
+            <p className="text-amber-700/70 text-xs font-semibold uppercase tracking-wider mb-1">Total Pieces</p>
+            <p className="text-2xl font-bold text-amber-900">{stock.reduce((sum, item) => sum + Number(item.quantity), 0)}</p>
+          </div>
+          <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 p-5 rounded-2xl border border-amber-200/60 shadow-sm flex flex-col justify-center">
+            <p className="text-amber-700/70 text-xs font-semibold uppercase tracking-wider mb-1">Total Gross Wt</p>
+            <p className="text-2xl font-bold text-amber-900">{stock.reduce((sum, item) => sum + Number(item.gross_weight), 0).toFixed(3)}g</p>
+          </div>
+          <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 p-5 rounded-2xl border border-amber-200/60 shadow-sm flex flex-col justify-center">
+            <p className="text-amber-700/70 text-xs font-semibold uppercase tracking-wider mb-1">Total Net Wt</p>
+            <p className="text-2xl font-bold text-amber-900">{stock.reduce((sum, item) => sum + Number(item.net_weight), 0).toFixed(3)}g</p>
+          </div>
+          <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 p-5 rounded-2xl border border-amber-200/60 shadow-sm flex flex-col justify-center">
+            <p className="text-amber-700/70 text-xs font-semibold uppercase tracking-wider mb-1">Total Fine Gold</p>
+            <p className="text-2xl font-bold text-amber-900">{stock.reduce((sum, item) => sum + ((Number(item.net_weight) * Number(item.touch_percentage)) / 100), 0).toFixed(3)}g</p>
+          </div>
+        </div>
+      )}
+
       <div className="bg-white/70 backdrop-blur-md rounded-2xl shadow-sm border border-amber-100/50 overflow-hidden">
         {stock.length === 0 ? (
           <div className="p-12 text-center text-gray-500">
@@ -100,33 +122,84 @@ export function StockDashboard({ initialStock }: { initialStock: StockItem[] }) 
             <p>No stock available. Add items to get started.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-amber-50/50 border-b border-amber-100/50 text-xs font-semibold text-amber-900/70 uppercase tracking-wider">
-                  <th className="p-4">Item Name</th>
-                  <th className="p-4">Gross Wt</th>
-                  <th className="p-4">Net Wt</th>
-                  <th className="p-4">Touch %</th>
-                  <th className="p-4">Fine Gold</th>
-                  <th className="p-4">Qty</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {stock.map((item) => (
-                  <tr key={item.id} className="hover:bg-amber-50/30 transition-colors">
-                    <td className="p-4 font-medium text-gray-900">{item.item_name}</td>
-                    <td className="p-4 text-gray-600">{Number(item.gross_weight).toFixed(3)}g</td>
-                    <td className="p-4 text-gray-600">{Number(item.net_weight).toFixed(3)}g</td>
-                    <td className="p-4 text-gray-600">{Number(item.touch_percentage).toFixed(2)}%</td>
-                    <td className="p-4 font-semibold text-amber-700">
-                      {((Number(item.net_weight) * Number(item.touch_percentage)) / 100).toFixed(3)}g
-                    </td>
-                    <td className="p-4 text-gray-600">{item.quantity}</td>
+          <div>
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-amber-50/50 border-b border-amber-100/50 text-xs font-semibold text-amber-900/70 uppercase tracking-wider">
+                    <th className="p-4">Item Name</th>
+                    <th className="p-4">Gross Wt</th>
+                    <th className="p-4">Net Wt</th>
+                    <th className="p-4">Touch %</th>
+                    <th className="p-4">Fine Gold</th>
+                    <th className="p-4">Qty</th>
+                    <th className="p-4 text-right">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {stock.map((item) => (
+                    <tr key={item.id} className="hover:bg-amber-50/30 transition-colors">
+                      <td className="p-4 font-medium text-gray-900">{item.item_name}</td>
+                      <td className="p-4 text-gray-600">{Number(item.gross_weight).toFixed(3)}g</td>
+                      <td className="p-4 text-gray-600">{Number(item.net_weight).toFixed(3)}g</td>
+                      <td className="p-4 text-gray-600">{Number(item.touch_percentage).toFixed(2)}%</td>
+                      <td className="p-4 font-semibold text-amber-700">
+                        {((Number(item.net_weight) * Number(item.touch_percentage)) / 100).toFixed(3)}g
+                      </td>
+                      <td className="p-4 text-gray-600">{item.quantity}</td>
+                      <td className="p-4 text-right">
+                        <Link href={`/stock/${item.id}`} className="text-amber-600 hover:text-amber-800 font-semibold text-sm transition-colors">
+                          View History
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Cards View */}
+            <div className="md:hidden divide-y divide-gray-100">
+              {stock.map((item, i) => (
+                <div key={item.id} className="p-5 space-y-4 animate-in slide-in-from-bottom-2 fade-in" style={{ animationDelay: `${i * 50}ms`, animationFillMode: 'both' }}>
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-gradient-to-br from-amber-100 to-amber-50 p-2.5 rounded-xl text-amber-600 shadow-sm shadow-amber-200/20">
+                        <Package size={18} />
+                      </div>
+                      <div>
+                        <div className="font-semibold text-gray-900">{item.item_name}</div>
+                        <div className="text-xs font-medium text-gray-500">Qty: {item.quantity}</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-bold text-amber-700">{((Number(item.net_weight) * Number(item.touch_percentage)) / 100).toFixed(3)}g</div>
+                      <div className="text-xs font-medium text-gray-500">Fine Gold</div>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-2 bg-gray-50/50 p-3 rounded-xl border border-gray-100/50 text-sm text-center">
+                    <div>
+                      <div className="text-gray-400 text-[10px] uppercase tracking-wider font-semibold mb-0.5">Gross</div>
+                      <div className="text-gray-700 font-medium">{Number(item.gross_weight).toFixed(3)}g</div>
+                    </div>
+                    <div>
+                      <div className="text-gray-400 text-[10px] uppercase tracking-wider font-semibold mb-0.5">Net</div>
+                      <div className="text-gray-700 font-medium">{Number(item.net_weight).toFixed(3)}g</div>
+                    </div>
+                    <div>
+                      <div className="text-gray-400 text-[10px] uppercase tracking-wider font-semibold mb-0.5">Touch</div>
+                      <div className="text-gray-700 font-medium">{Number(item.touch_percentage).toFixed(2)}%</div>
+                    </div>
+                  </div>
+                  
+                  <Link href={`/stock/${item.id}`} className="block w-full py-2.5 bg-amber-50 text-amber-700 text-center rounded-xl text-sm font-semibold hover:bg-amber-100 transition-colors">
+                    View History
+                  </Link>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>

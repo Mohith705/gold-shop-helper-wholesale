@@ -24,6 +24,7 @@ export type GoldTransaction = {
   is_lump_sum?: boolean;
   gst_included?: boolean;
   invoice_number?: number;
+  image_url?: string;
   created_at: string;
   customers?: Customer; // Joined relation
 };
@@ -59,6 +60,7 @@ export type WholesaleTransaction = {
   total_amount: number | null;
   transaction_type: 'SALE' | 'RECEIPT';
   invoice_number?: number;
+  image_url?: string;
   created_at: string;
   customers?: Customer;
 };

@@ -1,16 +1,23 @@
 'use client'
 
-import { GoldTransaction } from '@/types'
+import { GoldTransaction, WholesaleTransaction } from '@/types'
 import Link from 'next/link'
-import { PlusCircle, ReceiptText, User, Search, Filter, FileText } from 'lucide-react'
+import { PlusCircle, ReceiptText, User, Search, Filter, FileText, ArrowRightLeft } from 'lucide-react'
 import { useState } from 'react'
 
-export function Dashboard({ initialTransactions }: { initialTransactions: GoldTransaction[] }) {
+export function Dashboard({ 
+  initialTransactions,
+  initialWholesaleTransactions
+}: { 
+  initialTransactions: GoldTransaction[],
+  initialWholesaleTransactions: WholesaleTransaction[]
+}) {
+  const [activeTab, setActiveTab] = useState<'RETAIL' | 'WHOLESALE'>('RETAIL')
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState('date_desc')
 
-  // Filter and sort transactions
-  const filteredTransactions = initialTransactions.filter(tx => {
+  // Filter and sort Retail transactions
+  const filteredRetail = initialTransactions.filter(tx => {
     const query = searchQuery.toLowerCase()
     return (
       tx.customers?.name?.toLowerCase().includes(query) ||
@@ -25,40 +32,81 @@ export function Dashboard({ initialTransactions }: { initialTransactions: GoldTr
     return 0
   })
 
+  // Filter and sort Wholesale transactions
+  const filteredWholesale = initialWholesaleTransactions.filter(tx => {
+    const query = searchQuery.toLowerCase()
+    return (
+      tx.customers?.name?.toLowerCase().includes(query) ||
+      tx.customers?.phone?.toLowerCase().includes(query) ||
+      tx.item_name.toLowerCase().includes(query)
+    )
+  }).sort((a, b) => {
+    if (sortBy === 'date_desc') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    if (sortBy === 'date_asc') return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    if (sortBy === 'amount_desc') return (b.total_amount || 0) - (a.total_amount || 0)
+    if (sortBy === 'amount_asc') return (a.total_amount || 0) - (b.total_amount || 0)
+    return 0
+  })
+
+  const currentList = activeTab === 'RETAIL' ? filteredRetail : filteredWholesale;
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500 delay-150">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <h2 className="text-xl font-bold text-gray-800 tracking-tight">Recent Transactions</h2>
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto mt-2 sm:mt-0">
+        <div className="grid grid-cols-2 sm:flex sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:gap-3 w-full lg:w-auto mt-2 lg:mt-0">
+          <Link 
+            href="/challans" 
+            className="w-full sm:w-auto justify-center bg-white border border-amber-200/60 text-amber-900 hover:bg-amber-50 hover:border-amber-300 px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all font-medium shadow-sm hover:shadow-md text-sm sm:text-base"
+          >
+            <FileText size={18} className="text-amber-600" />
+            <span>Challans</span>
+          </Link>
           <Link 
             href="/reports" 
-            className="flex-1 sm:flex-none justify-center bg-white border border-amber-200/60 text-amber-900 hover:bg-amber-50 hover:border-amber-300 px-5 py-2.5 rounded-xl flex items-center gap-2 transition-all font-medium shadow-sm hover:shadow-md hover:-translate-y-0.5"
+            className="w-full sm:w-auto justify-center bg-white border border-amber-200/60 text-amber-900 hover:bg-amber-50 hover:border-amber-300 px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all font-medium shadow-sm hover:shadow-md text-sm sm:text-base"
           >
             <FileText size={18} className="text-amber-600" />
             <span>Reports</span>
           </Link>
           <Link 
             href="/stock" 
-            className="flex-1 sm:flex-none justify-center bg-white border border-amber-200/60 text-amber-900 hover:bg-amber-50 hover:border-amber-300 px-5 py-2.5 rounded-xl flex items-center gap-2 transition-all font-medium shadow-sm hover:shadow-md hover:-translate-y-0.5"
+            className="w-full sm:w-auto justify-center bg-white border border-amber-200/60 text-amber-900 hover:bg-amber-50 hover:border-amber-300 px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all font-medium shadow-sm hover:shadow-md text-sm sm:text-base"
           >
             <FileText size={18} className="text-amber-600" />
             <span>Stock</span>
           </Link>
           <Link 
             href="/add-wholesale-entry" 
-            className="flex-1 sm:flex-none justify-center bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 transition-all font-medium shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/30 hover:-translate-y-0.5"
+            className="w-full sm:w-auto justify-center bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all font-medium shadow-md shadow-amber-500/20 hover:shadow-lg text-sm sm:text-base"
           >
             <PlusCircle size={18} />
             <span>Wholesale</span>
           </Link>
           <Link 
             href="/add-entry" 
-            className="flex-1 sm:flex-none justify-center bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 transition-all font-medium shadow-md shadow-amber-500/20 hover:shadow-lg hover:shadow-amber-500/30 hover:-translate-y-0.5"
+            className="w-full sm:w-auto justify-center bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all font-medium shadow-md shadow-amber-500/20 hover:shadow-lg text-sm sm:text-base"
           >
             <PlusCircle size={18} />
             <span>Retail</span>
           </Link>
         </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-4 border-b border-gray-200">
+        <button 
+          onClick={() => setActiveTab('RETAIL')}
+          className={`pb-3 px-4 font-semibold text-sm transition-colors border-b-2 ${activeTab === 'RETAIL' ? 'border-amber-600 text-amber-900' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+        >
+          Retail Orders
+        </button>
+        <button 
+          onClick={() => setActiveTab('WHOLESALE')}
+          className={`pb-3 px-4 font-semibold text-sm transition-colors border-b-2 ${activeTab === 'WHOLESALE' ? 'border-amber-600 text-amber-900' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+        >
+          Wholesale Orders
+        </button>
       </div>
 
       {/* Filters Bar */}
@@ -89,7 +137,7 @@ export function Dashboard({ initialTransactions }: { initialTransactions: GoldTr
       </div>
 
       <div className="bg-white/70 backdrop-blur-md rounded-2xl shadow-sm border border-amber-100/50 overflow-hidden transition-all hover:shadow-md">
-        {filteredTransactions.length === 0 ? (
+        {currentList.length === 0 ? (
           <div className="p-16 text-center text-gray-500 animate-in fade-in">
             <div className="bg-amber-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 border border-amber-100">
               <ReceiptText className="h-10 w-10 text-amber-400" />
@@ -113,7 +161,7 @@ export function Dashboard({ initialTransactions }: { initialTransactions: GoldTr
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {filteredTransactions.map((tx, i) => (
+                  {currentList.map((tx: any, i: number) => (
                     <tr key={tx.id} className="hover:bg-amber-50/30 transition-colors group animate-in slide-in-from-bottom-2 fade-in" style={{ animationDelay: `${i * 50}ms`, animationFillMode: 'both' }}>
                       <td className="p-5">
                         <div className="flex items-center gap-4">
@@ -126,28 +174,49 @@ export function Dashboard({ initialTransactions }: { initialTransactions: GoldTr
                           </div>
                         </div>
                       </td>
-                      <td className="p-5 text-gray-700 font-medium">{tx.item_name} {tx.is_lump_sum && <span className="ml-2 inline-block px-2 py-0.5 bg-gray-100 text-gray-600 rounded-md text-[10px] uppercase font-bold tracking-wider">Lump Sum</span>}</td>
-                      <td className="p-5 text-gray-600 font-medium">{tx.is_lump_sum ? '-' : `${tx.weight_grams}g`}</td>
+                      <td className="p-5 text-gray-700 font-medium">{tx.item_name} {activeTab === 'RETAIL' && tx.is_lump_sum && <span className="ml-2 inline-block px-2 py-0.5 bg-gray-100 text-gray-600 rounded-md text-[10px] uppercase font-bold tracking-wider">Lump Sum</span>}</td>
+                      <td className="p-5 text-gray-600 font-medium">{activeTab === 'RETAIL' ? (tx.is_lump_sum ? '-' : `${tx.weight_grams}g`) : `${tx.gross_weight}g`}</td>
                       <td className="p-5 font-bold text-gray-900 tracking-tight">₹{tx.total_amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                       <td className="p-5 text-gray-500 text-sm font-medium">
                         {new Date(tx.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </td>
                       <td className="p-5">
                         <div className="flex items-center justify-end gap-3 whitespace-nowrap">
-                          <Link 
-                            href={`/transaction/${tx.id}`}
-                            className="text-amber-600 bg-amber-50 hover:bg-amber-100 hover:text-amber-900 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-1.5"
-                          >
-                            <User size={16} />
-                            View
-                          </Link>
-                          <Link 
-                            href={`/bill/${tx.id}?mode=admin`}
-                            className="text-gray-600 bg-gray-50 hover:bg-gray-100 hover:text-gray-900 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-1.5"
-                          >
-                            <ReceiptText size={16} />
-                            Bill
-                          </Link>
+                          {activeTab === 'RETAIL' ? (
+                            <>
+                              <Link 
+                                href={`/transaction/${tx.id}`}
+                                className="text-amber-600 bg-amber-50 hover:bg-amber-100 hover:text-amber-900 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-1.5"
+                              >
+                                <User size={16} />
+                                View
+                              </Link>
+                              <Link 
+                                href={`/bill/${tx.id}?mode=admin`}
+                                className="text-gray-600 bg-gray-50 hover:bg-gray-100 hover:text-gray-900 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-1.5"
+                              >
+                                <ReceiptText size={16} />
+                                Bill
+                              </Link>
+                            </>
+                          ) : (
+                            <>
+                              <Link 
+                                href={`/wholesale-transaction/${tx.id}`}
+                                className="text-amber-600 bg-amber-50 hover:bg-amber-100 hover:text-amber-900 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-1.5"
+                              >
+                                <User size={16} />
+                                View
+                              </Link>
+                              <Link 
+                                href={`/wholesale-receipt/${tx.id}`}
+                                className="text-gray-600 bg-gray-50 hover:bg-gray-100 hover:text-gray-900 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-1.5"
+                              >
+                                <ReceiptText size={16} />
+                                Voucher
+                              </Link>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -158,7 +227,7 @@ export function Dashboard({ initialTransactions }: { initialTransactions: GoldTr
 
             {/* Mobile Cards View */}
             <div className="md:hidden divide-y divide-gray-100">
-              {filteredTransactions.map((tx, i) => (
+              {currentList.map((tx: any, i: number) => (
                 <div key={tx.id} className="p-5 space-y-4 animate-in slide-in-from-bottom-2 fade-in" style={{ animationDelay: `${i * 50}ms`, animationFillMode: 'both' }}>
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-3">
@@ -177,23 +246,42 @@ export function Dashboard({ initialTransactions }: { initialTransactions: GoldTr
                   </div>
                   
                   <div className="flex justify-between items-center bg-gray-50/50 p-3 rounded-xl border border-gray-100/50 text-sm">
-                    <div className="text-gray-700 font-medium">{tx.item_name} {tx.is_lump_sum && <span className="ml-1 inline-block px-1.5 py-0.5 bg-gray-200 text-gray-600 rounded text-[9px] uppercase font-bold tracking-wider">Lump Sum</span>}</div>
-                    <div className="text-gray-500">{tx.is_lump_sum ? '-' : `${tx.weight_grams}g`}</div>
+                    <div className="text-gray-700 font-medium">{tx.item_name} {activeTab === 'RETAIL' && tx.is_lump_sum && <span className="ml-1 inline-block px-1.5 py-0.5 bg-gray-200 text-gray-600 rounded text-[9px] uppercase font-bold tracking-wider">Lump Sum</span>}</div>
+                    <div className="text-gray-500">{activeTab === 'RETAIL' ? (tx.is_lump_sum ? '-' : `${tx.weight_grams}g`) : `${tx.gross_weight}g`}</div>
                   </div>
 
                   <div className="flex items-center gap-3 w-full">
-                    <Link 
-                      href={`/transaction/${tx.id}`}
-                      className="flex-1 justify-center text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-100 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center gap-2"
-                    >
-                      <User size={16} /> View
-                    </Link>
-                    <Link 
-                      href={`/bill/${tx.id}?mode=admin`}
-                      className="flex-1 justify-center text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center gap-2"
-                    >
-                      <ReceiptText size={16} /> Bill
-                    </Link>
+                    {activeTab === 'RETAIL' ? (
+                      <>
+                        <Link 
+                          href={`/transaction/${tx.id}`}
+                          className="flex-1 justify-center text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-100 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center gap-2"
+                        >
+                          <User size={16} /> View
+                        </Link>
+                        <Link 
+                          href={`/bill/${tx.id}?mode=admin`}
+                          className="flex-1 justify-center text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center gap-2"
+                        >
+                          <ReceiptText size={16} /> Bill
+                        </Link>
+                      </>
+                    ) : (
+                      <>
+                        <Link 
+                          href={`/wholesale-transaction/${tx.id}`}
+                          className="flex-1 justify-center text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-100 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center gap-2"
+                        >
+                          <User size={16} /> View
+                        </Link>
+                        <Link 
+                          href={`/wholesale-receipt/${tx.id}`}
+                          className="flex-1 justify-center text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center gap-2"
+                        >
+                          <ReceiptText size={16} /> Voucher
+                        </Link>
+                      </>
+                    )}
                   </div>
                 </div>
               ))}

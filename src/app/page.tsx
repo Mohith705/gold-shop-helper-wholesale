@@ -5,14 +5,18 @@ import { GoldTransaction } from '@/types'
 export default async function Home() {
   const supabase = await createClient()
 
-  const { data: transactions, error } = await supabase
+  const { data: retailTransactions, error: retailError } = await supabase
     .from('gold_transactions')
     .select('*, customers(*)')
     .order('created_at', { ascending: false })
 
-  if (error) {
-    console.error('Error fetching transactions:', error)
-  }
+  const { data: wholesaleTransactions, error: wholesaleError } = await supabase
+    .from('wholesale_transactions')
+    .select('*, customers(*)')
+    .order('created_at', { ascending: false })
+
+  if (retailError) console.error('Error fetching retail transactions:', retailError)
+  if (wholesaleError) console.error('Error fetching wholesale transactions:', wholesaleError)
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-[#FCFBF8] to-[#F5F2EB] text-slate-900 p-4 md:p-8 font-sans selection:bg-amber-200 selection:text-amber-900">
@@ -29,7 +33,10 @@ export default async function Home() {
             </p>
           </div>
         </header>
-        <Dashboard initialTransactions={(transactions as any) || []} />
+        <Dashboard 
+          initialTransactions={(retailTransactions as any) || []} 
+          initialWholesaleTransactions={(wholesaleTransactions as any) || []}
+        />
       </div>
     </main>
   )

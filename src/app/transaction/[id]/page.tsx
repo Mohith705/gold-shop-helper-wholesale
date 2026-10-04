@@ -96,6 +96,18 @@ export default async function TransactionDetailsPage({ params }: { params: Promi
                 </div>
               </div>
             </div>
+
+            {transaction.notes && (
+              <div className="bg-white/70 backdrop-blur-md p-6 md:p-8 rounded-3xl shadow-sm border border-amber-100/50 transition-all hover:shadow-md">
+                <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                  <span className="w-1.5 h-6 bg-amber-500 rounded-full"></span>
+                  Additional Notes
+                </h2>
+                <div className="bg-amber-50/50 p-6 rounded-2xl border border-amber-100/50">
+                  <p className="text-gray-700 whitespace-pre-wrap">{transaction.notes}</p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Payments Sidebar */}

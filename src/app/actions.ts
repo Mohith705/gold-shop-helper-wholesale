@@ -18,6 +18,21 @@ export async function addCustomerAndTransaction(formData: FormData) {
   const makingCharges = parseFloat(formData.get('making_charges') as string) || 0
   const amountPaid = parseFloat(formData.get('amount_paid') as string || '0')
   const paymentMethod = formData.get('payment_method') as string || 'Cash'
+  const oldGoldWeight = parseFloat(formData.get('old_gold_weight') as string || '0')
+  const oldGoldValue = parseFloat(formData.get('old_gold_value') as string || '0')
+  const notes = formData.get('notes') as string || ''
+
+  let imageUrl = null;
+  const imageFile = formData.get('image') as File | null;
+  if (imageFile && imageFile.size > 0) {
+    const fileExt = imageFile.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+    const { error: uploadError } = await supabase.storage.from('images').upload(fileName, imageFile);
+    if (!uploadError) {
+      const { data: publicUrlData } = supabase.storage.from('images').getPublicUrl(fileName);
+      imageUrl = publicUrlData.publicUrl;
+    }
+  }
 
   // Insert Customer
   const { data: customer, error: customerError } = await supabase
@@ -72,7 +87,9 @@ export async function addCustomerAndTransaction(formData: FormData) {
       taxable_amount: taxableAmount,
       cgst_amount: cgstAmount,
       sgst_amount: sgstAmount,
-      total_amount: totalAmount
+      total_amount: totalAmount,
+      image_url: imageUrl,
+      notes: notes
     })
     .select('id')
     .single()
@@ -93,6 +110,29 @@ export async function addCustomerAndTransaction(formData: FormData) {
 
     if (paymentError) {
       return { error: paymentError.message }
+    }
+  }
+
+  // Insert Old Gold as Payment if value > 0
+  if (oldGoldValue > 0) {
+    const oldGoldTouch = parseFloat(formData.get('old_gold_touch') as string || '0')
+    const oldGoldRate = parseFloat(formData.get('old_gold_rate') as string || '0')
+    
+    let methodString = `Old Gold (${oldGoldWeight}g)`
+    if (oldGoldTouch > 0 && oldGoldRate > 0) {
+      methodString = `Old Gold (${oldGoldWeight}g @ ${oldGoldTouch}%, ₹${oldGoldRate}/g)`
+    }
+
+    const { error: oldGoldError } = await supabase
+      .from('payments')
+      .insert({
+        transaction_id: transaction.id,
+        amount_paid: oldGoldValue,
+        payment_method: methodString
+      })
+
+    if (oldGoldError) {
+      return { error: oldGoldError.message }
     }
   }
 
@@ -144,6 +184,34 @@ export async function deleteTransaction(transactionId: string) {
   return { success: true }
 }
 
+export async function deleteWholesaleTransaction(id: string) {
+  const supabase = await createClient()
+  
+  const { data: tx } = await supabase.from('wholesale_transactions').select('*').eq('id', id).single()
+
+  if (tx && tx.transaction_type === 'SALE' && tx.stock_item_id) {
+    const { data: stockItem } = await supabase.from('stock_items').select('*').eq('id', tx.stock_item_id).single()
+    if (stockItem) {
+      await supabase.from('stock_items').update({ 
+        gross_weight: stockItem.gross_weight + tx.gross_weight,
+        net_weight: stockItem.net_weight + tx.net_weight
+      }).eq('id', tx.stock_item_id)
+    }
+  }
+
+  const { error } = await supabase
+    .from('wholesale_transactions')
+    .delete()
+    .eq('id', id)
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath('/')
+  return { success: true }
+}
+
 export async function handleLogin(formData: FormData) {
   const username = formData.get('username')
   const password = formData.get('password')
@@ -180,6 +248,7 @@ export async function updateCustomerAndTransaction(formData: FormData) {
   const wastagePercentage = parseFloat(formData.get('wastage_percentage') as string) || 0
   const ratePerGram = parseFloat(formData.get('gold_rate_per_gram') as string) || 0
   const makingCharges = parseFloat(formData.get('making_charges') as string) || 0
+  const notes = formData.get('notes') as string || ''
 
   const isLumpSum = formData.get('is_lump_sum') === 'true'
   const gstIncluded = formData.get('gst_included') === 'true'
@@ -232,7 +301,8 @@ export async function updateCustomerAndTransaction(formData: FormData) {
       taxable_amount: taxableAmount,
       cgst_amount: cgstAmount,
       sgst_amount: sgstAmount,
-      total_amount: totalAmount
+      total_amount: totalAmount,
+      notes: notes
     })
     .eq('id', transactionId)
 
@@ -262,6 +332,25 @@ export async function addWholesaleTransaction(formData: FormData) {
   const totalAmount = parseFloat(formData.get('total_amount') as string) || 0
   const transactionType = formData.get('transaction_type') as string || 'SALE'
   const stockItemId = formData.get('stock_item_id') as string
+  const stockDeductionsRaw = formData.get('stock_deductions') as string
+  let stockDeductions: { stock_id: string, gross: number, net: number }[] = []
+  try {
+    if (stockDeductionsRaw) stockDeductions = JSON.parse(stockDeductionsRaw)
+  } catch(e) {}
+  
+  const notes = formData.get('notes') as string || ''
+
+  let imageUrl = null;
+  const imageFile = formData.get('image') as File | null;
+  if (imageFile && imageFile.size > 0) {
+    const fileExt = imageFile.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+    const { error: uploadError } = await supabase.storage.from('images').upload(fileName, imageFile);
+    if (!uploadError) {
+      const { data: publicUrlData } = supabase.storage.from('images').getPublicUrl(fileName);
+      imageUrl = publicUrlData.publicUrl;
+    }
+  }
 
   // Insert or Update Customer
   const { data: customer, error: customerError } = await supabase
@@ -288,7 +377,11 @@ export async function addWholesaleTransaction(formData: FormData) {
       fine_gold: fineGold,
       rate_amount: rateAmount,
       total_amount: totalAmount,
-      transaction_type: transactionType
+      transaction_type: transactionType,
+      image_url: imageUrl,
+      stock_item_id: stockItemId || null,
+      stock_deductions: stockDeductions.length > 0 ? stockDeductions : null,
+      notes: notes
     })
     .select('id')
     .single()
@@ -297,15 +390,88 @@ export async function addWholesaleTransaction(formData: FormData) {
     return { error: transactionError?.message || 'Failed to create transaction' }
   }
 
-  // Deduct Stock if stock item was selected
-  if (stockItemId && transactionType === 'SALE') {
-    const { data: stockItem } = await supabase.from('stock_items').select('quantity').eq('id', stockItemId).single()
-    if (stockItem && stockItem.quantity > 0) {
-      await supabase.from('stock_items').update({ quantity: stockItem.quantity - 1 }).eq('id', stockItemId)
+  // Deduct Stock Weight if multiple stock items were selected
+  if (stockDeductions.length > 0 && transactionType === 'SALE') {
+    for (const deduction of stockDeductions) {
+      const { data: stockItem } = await supabase.from('stock_items').select('*').eq('id', deduction.stock_id).single()
+      if (stockItem) {
+        await supabase.from('stock_items').update({ 
+          gross_weight: Math.max(0, stockItem.gross_weight - deduction.gross),
+          net_weight: Math.max(0, stockItem.net_weight - deduction.net)
+        }).eq('id', deduction.stock_id)
+      }
+    }
+  } else if (stockItemId && transactionType === 'SALE') {
+    // Fallback for old single stock selection logic just in case
+    const { data: stockItem } = await supabase.from('stock_items').select('*').eq('id', stockItemId).single()
+    if (stockItem) {
+      await supabase.from('stock_items').update({ 
+        gross_weight: Math.max(0, stockItem.gross_weight - grossWeight),
+        net_weight: Math.max(0, stockItem.net_weight - netWeight)
+      }).eq('id', stockItemId)
     }
   }
 
   revalidatePath('/')
   revalidatePath('/stock')
   return { success: true, transactionId: transaction.id }
+}
+
+export async function createDeliveryChallan(formData: FormData) {
+  const supabase = await createClient()
+
+  const customerName = formData.get('customer_name') as string
+  const customerAddress = formData.get('customer_address') as string
+  const customerGstin = formData.get('customer_gstin') as string
+  const customerState = formData.get('customer_state') as string
+  const transportMode = formData.get('transport_mode') as string
+  const vehicleNumber = formData.get('vehicle_number') as string
+  const placeOfSupply = formData.get('place_of_supply') as string
+  const dcDate = formData.get('dc_date') as string || new Date().toISOString()
+  
+  const itemsRaw = formData.get('items') as string
+  let items: any[] = []
+  try {
+    if (itemsRaw) items = JSON.parse(itemsRaw)
+  } catch(e) {}
+
+  const cgstAmount = parseFloat(formData.get('cgst_amount') as string) || 0
+  const sgstAmount = parseFloat(formData.get('sgst_amount') as string) || 0
+  const igstAmount = parseFloat(formData.get('igst_amount') as string) || 0
+  const totalTaxableValue = parseFloat(formData.get('total_taxable_value') as string) || 0
+  const totalAmount = parseFloat(formData.get('total_amount') as string) || 0
+
+  // Generate DC Number
+  const { count } = await supabase.from('delivery_challans').select('*', { count: 'exact', head: true })
+  const nextNumber = (count || 0) + 1
+  const dcNumber = `DC-${new Date().getFullYear()}-${nextNumber.toString().padStart(4, '0')}`
+
+  const { data: challan, error } = await supabase
+    .from('delivery_challans')
+    .insert({
+      dc_number: dcNumber,
+      dc_date: dcDate,
+      customer_name: customerName,
+      customer_address: customerAddress,
+      customer_gstin: customerGstin,
+      customer_state: customerState,
+      transport_mode: transportMode,
+      vehicle_number: vehicleNumber,
+      place_of_supply: placeOfSupply,
+      items: items,
+      total_taxable_value: totalTaxableValue,
+      cgst_amount: cgstAmount,
+      sgst_amount: sgstAmount,
+      igst_amount: igstAmount,
+      total_amount: totalAmount
+    })
+    .select('id')
+    .single()
+
+  if (error || !challan) {
+    return { error: error?.message || 'Failed to create Delivery Challan' }
+  }
+
+  revalidatePath('/challans')
+  return { success: true, challanId: challan.id }
 }

@@ -70,7 +70,7 @@ export default async function BillPage({
             )}
           </div>
           <div className="flex items-center gap-3">
-            {(isAdmin && customer?.phone) && (
+            {customer?.phone && (
               <a 
                 href={`https://wa.me/91${customer.phone.replace(/\\D/g, '').slice(-10)}?text=${encodeURIComponent(`Hello ${customer.name},\n\nThank you for shopping with Vyshnavi Jewellers!\n\nHere are your bill details:\nInvoice No: INV-${transaction.invoice_number}\nItem: ${transaction.item_name}\nNet Weight: ${transaction.net_weight.toFixed(3)}g\n\nTotal Amount: ₹${transaction.total_amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\nAmount Paid: ₹${totalPaid.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\nBalance Due: ₹${balanceDue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n\nRegards,\nVyshnavi Jewellers`)}`}
                 target="_blank"
@@ -225,14 +225,28 @@ export default async function BillPage({
                   <div className="p-2 text-right font-bold text-black">{transaction.total_amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
                 </div>
                 {(() => {
-                  const totalPaid = transaction.payments?.reduce((sum: number, p: any) => sum + Number(p.amount_paid), 0) || 0;
+                  const oldGoldPayments = transaction.payments?.filter((p: any) => p.payment_method.startsWith('Old Gold')) || [];
+                  const moneyPayments = transaction.payments?.filter((p: any) => !p.payment_method.startsWith('Old Gold')) || [];
+                  
+                  const totalOldGold = oldGoldPayments.reduce((sum: number, p: any) => sum + Number(p.amount_paid), 0);
+                  const totalMoneyPaid = moneyPayments.reduce((sum: number, p: any) => sum + Number(p.amount_paid), 0);
+                  const totalPaid = totalOldGold + totalMoneyPaid;
                   const balanceDue = transaction.total_amount - totalPaid;
+                  
                   return (
                     <>
-                      <div className="grid grid-cols-[1fr_120px] divide-x divide-blue-800 border-t border-blue-800">
-                        <div className="p-2 font-medium text-green-700">Amount Paid :</div>
-                        <div className="p-2 text-right font-medium text-green-700">{totalPaid.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
-                      </div>
+                      {oldGoldPayments.map((p: any, idx: number) => (
+                        <div key={`og-${idx}`} className="grid grid-cols-[1fr_120px] divide-x divide-blue-800 border-t border-blue-800">
+                          <div className="p-2 font-medium text-amber-700">Less: {p.payment_method} :</div>
+                          <div className="p-2 text-right font-medium text-amber-700">-{Number(p.amount_paid).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                        </div>
+                      ))}
+                      {totalMoneyPaid > 0 && (
+                        <div className="grid grid-cols-[1fr_120px] divide-x divide-blue-800 border-t border-blue-800">
+                          <div className="p-2 font-medium text-green-700">Amount Paid :</div>
+                          <div className="p-2 text-right font-medium text-green-700">{totalMoneyPaid.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                        </div>
+                      )}
                       <div className="grid grid-cols-[1fr_120px] divide-x divide-blue-800 border-t border-blue-800">
                         <div className="p-2 font-bold text-red-600">Balance Due :</div>
                         <div className="p-2 text-right font-bold text-red-600">{balanceDue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
@@ -242,6 +256,15 @@ export default async function BillPage({
                 })()}
               </div>
             </div>
+
+            {/* Item Image */}
+            {transaction.image_url && (
+              <div className="border-t border-blue-800 p-4 flex justify-center bg-gray-50/50">
+                <div className="border border-blue-200 p-2 max-w-sm rounded-lg shadow-sm bg-white">
+                  <img src={transaction.image_url} alt="Item" className="w-full h-auto rounded" />
+                </div>
+              </div>
+            )}
 
             {/* Signature Section */}
             <div className="grid grid-cols-2 border-t border-blue-800 text-blue-900 text-center text-sm h-24 relative">
