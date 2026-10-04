@@ -109,9 +109,9 @@ export function AddChallanForm() {
       </section>
 
       <section className="space-y-4">
-        <div className="flex justify-between items-center border-b pb-2">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-2">
           <h3 className="text-lg font-medium text-gray-900">Items</h3>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-3">
             <label className="flex items-center gap-2 text-sm font-medium text-amber-700 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200 cursor-pointer hover:bg-amber-100 transition-colors">
               <input type="checkbox" checked={gstIncluded} onChange={(e) => setGstIncluded(e.target.checked)} className="w-4 h-4 text-amber-600 rounded border-amber-300 focus:ring-amber-500" />
               GST Included in Rate

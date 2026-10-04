@@ -43,45 +43,45 @@ export default async function DeliveryChallanPage({ params }: { params: Promise<
           </div>
         </header>
 
-        <div className="bg-white p-6 md:p-12 shadow-xl print:shadow-none print:p-0 mx-auto overflow-x-auto">
-          <div style={{ minWidth: '800px', maxWidth: '210mm' }} className="mx-auto">
+        <div className="bg-white p-4 md:p-12 shadow-xl print:shadow-none print:p-0 mx-auto w-full max-w-[210mm]">
+          <div className="mx-auto text-xs sm:text-sm print:text-sm">
             {/* Header */}
-          <div className="border border-blue-800 p-4 relative mb-4">
-            <div className="flex justify-between items-start text-blue-900 font-semibold text-sm mb-4">
+          <div className="border border-blue-800 p-3 sm:p-4 relative mb-4">
+            <div className="flex justify-between items-start text-blue-900 font-semibold text-[10px] sm:text-sm mb-4">
               <div>GSTIN : 37ANKPG3859N1ZB</div>
-              <div className="text-xs">Original / Duplicate / Triplicate</div>
+              <div className="text-[10px] sm:text-xs">Original / Duplicate / Triplicate</div>
             </div>
             
             <div className="text-center mb-6">
-              <h2 className="text-xl font-bold tracking-widest text-blue-900 mb-2 border-b-2 border-blue-900 inline-block px-4">DELIVERY CHALLAN</h2>
-              <h1 className="text-4xl font-black text-blue-900 tracking-wider mb-2">VYSHNAVI JEWELLERS</h1>
-              <p className="text-blue-900 text-sm font-medium">D.No. 13/48, NSC Complex, Shop No. 10, Mandapala Street, NELLORE - 524 001</p>
-              <div className="flex justify-center gap-8 mt-1 text-blue-900 text-sm font-medium">
+              <h2 className="text-sm sm:text-xl font-bold tracking-widest text-blue-900 mb-2 border-b-2 border-blue-900 inline-block px-2 sm:px-4">DELIVERY CHALLAN</h2>
+              <h1 className="text-xl sm:text-4xl font-black text-blue-900 tracking-wider mb-2">VYSHNAVI JEWELLERS</h1>
+              <p className="text-blue-900 text-[10px] sm:text-sm font-medium">D.No. 13/48, NSC Complex, Shop No. 10, Mandapala Street, NELLORE - 524 001</p>
+              <div className="flex justify-center gap-4 sm:gap-8 mt-1 text-blue-900 text-[10px] sm:text-sm font-medium">
                 <span>Ph. : 0861-2313134</span>
                 <span>Cell : 9849643134</span>
               </div>
             </div>
 
             {/* Info Grid */}
-            <div className="grid grid-cols-2 border-t-2 border-blue-800 -mx-4 -mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2 border-t-2 border-blue-800 -mx-3 -mb-3 sm:-mx-4 sm:-mb-4">
               {/* Left */}
-              <div className="border-r-2 border-blue-800 p-4 space-y-2">
-                <div className="grid grid-cols-[80px_10px_1fr]">
+              <div className="border-b-2 sm:border-b-0 sm:border-r-2 print:border-b-0 print:border-r-2 border-blue-800 p-3 sm:p-4 space-y-1 sm:space-y-2">
+                <div className="grid grid-cols-[60px_10px_1fr] sm:grid-cols-[80px_10px_1fr]">
                   <span className="font-semibold text-blue-900">Name</span>
                   <span>:</span>
                   <span className="font-bold">{challan.customer_name}</span>
                 </div>
-                <div className="grid grid-cols-[80px_10px_1fr]">
+                <div className="grid grid-cols-[60px_10px_1fr] sm:grid-cols-[80px_10px_1fr]">
                   <span className="font-semibold text-blue-900">Address</span>
                   <span>:</span>
                   <span>{challan.customer_address}</span>
                 </div>
-                <div className="grid grid-cols-[80px_10px_1fr]">
+                <div className="grid grid-cols-[60px_10px_1fr] sm:grid-cols-[80px_10px_1fr]">
                   <span className="font-semibold text-blue-900">GSTIN</span>
                   <span>:</span>
                   <span>{challan.customer_gstin}</span>
                 </div>
-                <div className="grid grid-cols-[80px_10px_1fr]">
+                <div className="grid grid-cols-[60px_10px_1fr] sm:grid-cols-[80px_10px_1fr]">
                   <span className="font-semibold text-blue-900">State</span>
                   <span>:</span>
                   <span>{challan.customer_state}</span>
@@ -89,29 +89,29 @@ export default async function DeliveryChallanPage({ params }: { params: Promise<
               </div>
 
               {/* Right */}
-              <div className="p-4 space-y-2">
-                <div className="grid grid-cols-[140px_10px_1fr]">
+              <div className="p-3 sm:p-4 space-y-1 sm:space-y-2">
+                <div className="grid grid-cols-[100px_10px_1fr] sm:grid-cols-[140px_10px_1fr]">
                   <span className="font-semibold text-blue-900">D.C. No.</span>
                   <span>:</span>
                   <span className="font-bold">{challan.dc_number}</span>
                 </div>
-                <div className="grid grid-cols-[140px_10px_1fr]">
+                <div className="grid grid-cols-[100px_10px_1fr] sm:grid-cols-[140px_10px_1fr]">
                   <span className="font-semibold text-blue-900">D.C. Date</span>
                   <span>:</span>
                   <span className="font-bold">{new Date(challan.dc_date).toLocaleDateString('en-IN')}</span>
                 </div>
-                <div className="grid grid-cols-[140px_10px_1fr]">
-                  <span className="font-semibold text-blue-900">Transportation Mode</span>
+                <div className="grid grid-cols-[100px_10px_1fr] sm:grid-cols-[140px_10px_1fr]">
+                  <span className="font-semibold text-blue-900 text-[10px] sm:text-sm">Transport Mode</span>
                   <span>:</span>
                   <span>{challan.transport_mode}</span>
                 </div>
-                <div className="grid grid-cols-[140px_10px_1fr]">
-                  <span className="font-semibold text-blue-900">Vehicle Number</span>
+                <div className="grid grid-cols-[100px_10px_1fr] sm:grid-cols-[140px_10px_1fr]">
+                  <span className="font-semibold text-blue-900 text-[10px] sm:text-sm">Vehicle No.</span>
                   <span>:</span>
                   <span>{challan.vehicle_number}</span>
                 </div>
-                <div className="grid grid-cols-[140px_10px_1fr]">
-                  <span className="font-semibold text-blue-900">Place of Supply</span>
+                <div className="grid grid-cols-[100px_10px_1fr] sm:grid-cols-[140px_10px_1fr]">
+                  <span className="font-semibold text-blue-900 text-[10px] sm:text-sm">Place of Supply</span>
                   <span>:</span>
                   <span>{challan.place_of_supply}</span>
                 </div>
@@ -120,16 +120,16 @@ export default async function DeliveryChallanPage({ params }: { params: Promise<
           </div>
 
           {/* Table */}
-          <div className="border border-blue-800">
-            <table className="w-full text-center text-sm">
+          <div className="overflow-x-auto border border-blue-800">
+            <table className="w-full min-w-[600px] sm:min-w-full text-center text-xs sm:text-sm">
               <thead>
                 <tr className="border-b border-blue-800 text-blue-900 font-semibold bg-blue-50/50">
-                  <th className="p-2 border-r border-blue-800 text-left w-1/3">Description of Goods</th>
-                  <th className="p-2 border-r border-blue-800">HSN Code</th>
-                  <th className="p-2 border-r border-blue-800">UOM</th>
-                  <th className="p-2 border-r border-blue-800">QTY.</th>
-                  <th className="p-2 border-r border-blue-800">Rate per Unit</th>
-                  <th className="p-2">Total Taxable Value</th>
+                  <th className="p-1 sm:p-2 border-r border-blue-800 text-left w-1/3">Description of Goods</th>
+                  <th className="p-1 sm:p-2 border-r border-blue-800">HSN Code</th>
+                  <th className="p-1 sm:p-2 border-r border-blue-800">UOM</th>
+                  <th className="p-1 sm:p-2 border-r border-blue-800">QTY.</th>
+                  <th className="p-1 sm:p-2 border-r border-blue-800">Rate/Unit</th>
+                  <th className="p-1 sm:p-2">Taxable Value</th>
                 </tr>
               </thead>
               <tbody>
