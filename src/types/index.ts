@@ -47,6 +47,7 @@ export type StockItem = {
   stones_weight: number;
   stones_price: number;
   beads_weight: number;
+  extra_beads: number;
   created_at: string;
   updated_at: string;
 };

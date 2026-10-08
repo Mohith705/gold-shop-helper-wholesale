@@ -9,9 +9,10 @@ import Link from 'next/link'
 export function StockDashboard({ initialStock }: { initialStock: StockItem[] }) {
   const [stock, setStock] = useState<StockItem[]>(initialStock)
   const [isAdding, setIsAdding] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const [formData, setFormData] = useState({
+  const defaultForm = {
     item_name: '',
     gross_weight: '',
     net_weight: '',
@@ -19,8 +20,11 @@ export function StockDashboard({ initialStock }: { initialStock: StockItem[] }) 
     quantity: '1',
     stones_weight: '0',
     stones_price: '0',
-    beads_weight: '0'
-  })
+    beads_weight: '0',
+    extra_beads: '0'
+  }
+
+  const [formData, setFormData] = useState(defaultForm)
 
   const supabase = createClient()
 
@@ -29,7 +33,7 @@ export function StockDashboard({ initialStock }: { initialStock: StockItem[] }) 
     setLoading(true)
     
     try {
-      const { data, error } = await supabase.from('stock_items').insert({
+      const payload = {
         item_name: formData.item_name,
         gross_weight: Number(formData.gross_weight),
         net_weight: Number(formData.net_weight),
@@ -37,21 +41,56 @@ export function StockDashboard({ initialStock }: { initialStock: StockItem[] }) 
         quantity: Number(formData.quantity),
         stones_weight: Number(formData.stones_weight),
         stones_price: Number(formData.stones_price),
-        beads_weight: Number(formData.beads_weight)
-      }).select()
+        beads_weight: Number(formData.beads_weight),
+        extra_beads: Number(formData.extra_beads)
+      }
+
+      let resData, error;
+
+      if (editingId) {
+        const response = await supabase.from('stock_items').update(payload).eq('id', editingId).select()
+        resData = response.data;
+        error = response.error;
+      } else {
+        const response = await supabase.from('stock_items').insert(payload).select()
+        resData = response.data;
+        error = response.error;
+      }
 
       if (error) throw error
-      if (data) {
-        setStock([data[0], ...stock])
+      if (resData) {
+        if (editingId) {
+          setStock(stock.map(item => item.id === editingId ? resData[0] : item))
+        } else {
+          setStock([resData[0], ...stock])
+        }
         setIsAdding(false)
-        setFormData({ item_name: '', gross_weight: '', net_weight: '', touch_percentage: '', quantity: '1', stones_weight: '0', stones_price: '0', beads_weight: '0' })
+        setEditingId(null)
+        setFormData(defaultForm)
       }
     } catch (err) {
-      console.error('Error adding stock:', err)
-      alert('Failed to add stock.')
+      console.error('Error saving stock:', err)
+      alert('Failed to save stock.')
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleEdit = (item: StockItem) => {
+    setFormData({
+      item_name: item.item_name,
+      gross_weight: item.gross_weight.toString(),
+      net_weight: item.net_weight.toString(),
+      touch_percentage: item.touch_percentage.toString(),
+      quantity: item.quantity.toString(),
+      stones_weight: (item.stones_weight || 0).toString(),
+      stones_price: (item.stones_price || 0).toString(),
+      beads_weight: (item.beads_weight || 0).toString(),
+      extra_beads: (item.extra_beads || 0).toString()
+    })
+    setEditingId(item.id)
+    setIsAdding(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   return (
@@ -59,7 +98,13 @@ export function StockDashboard({ initialStock }: { initialStock: StockItem[] }) 
       <div className="flex justify-between items-center bg-white/70 backdrop-blur-md p-4 rounded-2xl shadow-sm border border-amber-100/50">
         <h2 className="text-xl font-bold text-gray-800">Current Stock</h2>
         <button 
-          onClick={() => setIsAdding(!isAdding)}
+          onClick={() => {
+            setIsAdding(!isAdding)
+            if (isAdding) {
+              setEditingId(null)
+              setFormData(defaultForm)
+            }
+          }}
           className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 transition-all font-medium shadow-md shadow-amber-500/20"
         >
           <PlusCircle size={18} />
@@ -88,7 +133,7 @@ export function StockDashboard({ initialStock }: { initialStock: StockItem[] }) 
               <input required type="number" step="0.01" value={formData.touch_percentage} onChange={e => setFormData({...formData, touch_percentage: e.target.value})} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-amber-500 focus:border-amber-500" placeholder="e.g. 96.00" />
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Stones Wt (g)</label>
               <input type="number" step="0.001" value={formData.stones_weight} onChange={e => setFormData({...formData, stones_weight: e.target.value})} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-amber-500 focus:border-amber-500" />
@@ -100,6 +145,10 @@ export function StockDashboard({ initialStock }: { initialStock: StockItem[] }) 
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Beads Wt (g)</label>
               <input type="number" step="0.001" value={formData.beads_weight} onChange={e => setFormData({...formData, beads_weight: e.target.value})} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-amber-500 focus:border-amber-500" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Extra Beads</label>
+              <input type="number" step="0.001" value={formData.extra_beads} onChange={e => setFormData({...formData, extra_beads: e.target.value})} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-amber-500 focus:border-amber-500" />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Quantity</label>
@@ -153,6 +202,7 @@ export function StockDashboard({ initialStock }: { initialStock: StockItem[] }) 
                     <th className="p-4">Net Wt</th>
                     <th className="p-4">Stones (Wt/₹)</th>
                     <th className="p-4">Beads Wt</th>
+                    <th className="p-4">Ex. Beads</th>
                     <th className="p-4">Touch %</th>
                     <th className="p-4">Fine Gold</th>
                     <th className="p-4">Qty</th>
@@ -173,14 +223,20 @@ export function StockDashboard({ initialStock }: { initialStock: StockItem[] }) 
                       <td className="p-4 text-gray-600">
                         {Number(item.beads_weight) > 0 ? `${Number(item.beads_weight).toFixed(3)}g` : '-'}
                       </td>
+                      <td className="p-4 text-gray-600">
+                        {Number(item.extra_beads) > 0 ? `${Number(item.extra_beads).toFixed(3)}g` : '-'}
+                      </td>
                       <td className="p-4 text-gray-600">{Number(item.touch_percentage).toFixed(2)}%</td>
                       <td className="p-4 font-semibold text-amber-700">
                         {((Number(item.net_weight) * Number(item.touch_percentage)) / 100).toFixed(3)}g
                       </td>
                       <td className="p-4 text-gray-600">{item.quantity}</td>
-                      <td className="p-4 text-right">
+                      <td className="p-4 text-right space-x-3">
+                        <button onClick={() => handleEdit(item)} className="text-blue-600 hover:text-blue-800 font-semibold text-sm transition-colors">
+                          Edit
+                        </button>
                         <Link href={`/stock/${item.id}`} className="text-amber-600 hover:text-amber-800 font-semibold text-sm transition-colors">
-                          View History
+                          History
                         </Link>
                       </td>
                     </tr>
@@ -224,27 +280,47 @@ export function StockDashboard({ initialStock }: { initialStock: StockItem[] }) 
                     </div>
                   </div>
 
-                  {(Number(item.stones_weight) > 0 || Number(item.beads_weight) > 0) && (
-                    <div className="grid grid-cols-2 gap-2 bg-amber-50/30 p-3 rounded-xl border border-amber-100/50 text-sm text-center">
-                      <div>
-                        <div className="text-gray-400 text-[10px] uppercase tracking-wider font-semibold mb-0.5">Stones (Wt / ₹)</div>
-                        <div className="text-gray-700 font-medium">
-                          {Number(item.stones_weight) > 0 ? `${Number(item.stones_weight).toFixed(3)}g` : '-'}
-                          {Number(item.stones_price) > 0 ? ` / ₹${Number(item.stones_price).toFixed(2)}` : ''}
+                  {(Number(item.stones_weight) > 0 || Number(item.beads_weight) > 0 || Number(item.extra_beads) > 0) && (
+                    <div className={`grid ${Number(item.extra_beads) > 0 ? 'grid-cols-3' : 'grid-cols-2'} gap-2 bg-amber-50/30 p-3 rounded-xl border border-amber-100/50 text-sm text-center`}>
+                      {(Number(item.stones_weight) > 0 || Number(item.stones_price) > 0) && (
+                        <div>
+                          <div className="text-gray-400 text-[10px] uppercase tracking-wider font-semibold mb-0.5">Stones (Wt / ₹)</div>
+                          <div className="text-gray-700 font-medium">
+                            {Number(item.stones_weight) > 0 ? `${Number(item.stones_weight).toFixed(3)}g` : '-'}
+                            {Number(item.stones_price) > 0 ? ` / ₹${Number(item.stones_price).toFixed(2)}` : ''}
+                          </div>
                         </div>
-                      </div>
-                      <div>
-                        <div className="text-gray-400 text-[10px] uppercase tracking-wider font-semibold mb-0.5">Beads Wt</div>
-                        <div className="text-gray-700 font-medium">
-                          {Number(item.beads_weight) > 0 ? `${Number(item.beads_weight).toFixed(3)}g` : '-'}
+                      )}
+                      {Number(item.beads_weight) > 0 && (
+                        <div>
+                          <div className="text-gray-400 text-[10px] uppercase tracking-wider font-semibold mb-0.5">Beads Wt</div>
+                          <div className="text-gray-700 font-medium">
+                            {Number(item.beads_weight).toFixed(3)}g
+                          </div>
                         </div>
-                      </div>
+                      )}
+                      {Number(item.extra_beads) > 0 && (
+                        <div>
+                          <div className="text-gray-400 text-[10px] uppercase tracking-wider font-semibold mb-0.5">Ex. Beads</div>
+                          <div className="text-gray-700 font-medium">
+                            {Number(item.extra_beads).toFixed(3)}g
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
-                  <Link href={`/stock/${item.id}`} className="block w-full py-2.5 bg-amber-50 text-amber-700 text-center rounded-xl text-sm font-semibold hover:bg-amber-100 transition-colors">
-                    View History
-                  </Link>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button 
+                      onClick={() => handleEdit(item)}
+                      className="block w-full py-2.5 bg-blue-50 text-blue-700 text-center rounded-xl text-sm font-semibold hover:bg-blue-100 transition-colors"
+                    >
+                      Edit
+                    </button>
+                    <Link href={`/stock/${item.id}`} className="block w-full py-2.5 bg-amber-50 text-amber-700 text-center rounded-xl text-sm font-semibold hover:bg-amber-100 transition-colors">
+                      View History
+                    </Link>
+                  </div>
                 </div>
               ))}
             </div>
