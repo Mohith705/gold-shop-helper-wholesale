@@ -186,21 +186,21 @@ export default async function DeliveryChallanPage({ params }: { params: Promise<
                 </div>
               </div>
               <div className="w-1/3">
-                <div className="flex justify-between p-2 border-b border-blue-800 text-sm">
-                  <span className="text-blue-900 font-semibold">CGST</span>
-                  <span>{challan.cgst_amount ? Number(challan.cgst_amount).toFixed(2) : '0.00'}</span>
+                <div className="flex justify-between items-center p-1 sm:p-2 border-b border-blue-800 text-[10px] sm:text-sm gap-2">
+                  <span className="text-blue-900 font-semibold whitespace-nowrap">CGST (1.5%)</span>
+                  <span className="text-right">{challan.cgst_amount ? Number(challan.cgst_amount).toFixed(2) : '0.00'}</span>
                 </div>
-                <div className="flex justify-between p-2 border-b border-blue-800 text-sm">
-                  <span className="text-blue-900 font-semibold">SGST</span>
-                  <span>{challan.sgst_amount ? Number(challan.sgst_amount).toFixed(2) : '0.00'}</span>
+                <div className="flex justify-between items-center p-1 sm:p-2 border-b border-blue-800 text-[10px] sm:text-sm gap-2">
+                  <span className="text-blue-900 font-semibold whitespace-nowrap">SGST (1.5%)</span>
+                  <span className="text-right">{challan.sgst_amount ? Number(challan.sgst_amount).toFixed(2) : '0.00'}</span>
                 </div>
-                <div className="flex justify-between p-2 border-b border-blue-800 text-sm">
-                  <span className="text-blue-900 font-semibold">IGST</span>
-                  <span>{challan.igst_amount ? Number(challan.igst_amount).toFixed(2) : '0.00'}</span>
+                <div className="flex justify-between items-center p-1 sm:p-2 border-b border-blue-800 text-[10px] sm:text-sm gap-2">
+                  <span className="text-blue-900 font-semibold whitespace-nowrap">IGST</span>
+                  <span className="text-right">{challan.igst_amount ? Number(challan.igst_amount).toFixed(2) : '0.00'}</span>
                 </div>
-                <div className="flex justify-between p-2 border-b border-blue-800 text-sm font-bold bg-blue-50/30">
-                  <span className="text-blue-900">Total Amount After Tax</span>
-                  <span>{Number(challan.total_amount).toFixed(2)}</span>
+                <div className="flex flex-col sm:flex-row justify-between items-end sm:items-center p-1 sm:p-2 border-b border-blue-800 text-[10px] sm:text-sm font-bold bg-blue-50/30 gap-1 sm:gap-2">
+                  <span className="text-blue-900 text-left w-full sm:w-auto">Grand Total</span>
+                  <span className="text-right w-full sm:w-auto">{Number(challan.total_amount).toFixed(2)}</span>
                 </div>
                 
                 <div className="p-3 text-center mt-12 flex flex-col items-center">
