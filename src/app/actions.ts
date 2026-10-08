@@ -330,6 +330,10 @@ export async function addWholesaleTransaction(formData: FormData) {
   const touchPercentage = parseFloat(formData.get('touch_percentage') as string) || 0
   const rateAmount = parseFloat(formData.get('rate_amount') as string) || 0
   const totalAmount = parseFloat(formData.get('total_amount') as string) || 0
+  const stonesWeight = parseFloat(formData.get('stones_weight') as string) || 0
+  const stonesPrice = parseFloat(formData.get('stones_price') as string) || 0
+  const beadsWeight = parseFloat(formData.get('beads_weight') as string) || 0
+  const extraBeads = parseFloat(formData.get('extra_beads') as string) || 0
   const transactionType = formData.get('transaction_type') as string || 'SALE'
   const stockItemId = formData.get('stock_item_id') as string
   const stockDeductionsRaw = formData.get('stock_deductions') as string
@@ -375,6 +379,10 @@ export async function addWholesaleTransaction(formData: FormData) {
       net_weight: netWeight,
       touch_percentage: touchPercentage,
       fine_gold: fineGold,
+      stones_weight: stonesWeight,
+      stones_price: stonesPrice,
+      beads_weight: beadsWeight,
+      extra_beads: extraBeads,
       rate_amount: rateAmount,
       total_amount: totalAmount,
       transaction_type: transactionType,

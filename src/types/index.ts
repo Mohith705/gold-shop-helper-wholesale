@@ -60,6 +60,10 @@ export type WholesaleTransaction = {
   net_weight: number;
   touch_percentage: number;
   fine_gold: number;
+  stones_weight?: number;
+  stones_price?: number;
+  beads_weight?: number;
+  extra_beads?: number;
   rate_amount: number | null;
   total_amount: number | null;
   transaction_type: 'SALE' | 'RECEIPT';

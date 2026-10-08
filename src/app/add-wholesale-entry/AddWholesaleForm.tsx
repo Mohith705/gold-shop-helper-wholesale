@@ -135,7 +135,28 @@ export function AddWholesaleForm({ availableStock }: { availableStock: StockItem
             <label className="block text-sm font-medium text-gray-700 mb-1">Touch (Tnch) %</label>
             <input required name="touch_percentage" type="number" step="0.01" value={touchPercentage || ''} onChange={e => setTouchPercentage(parseFloat(e.target.value) || 0)} className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors" />
           </div>
-          <div className="bg-amber-50 rounded-xl p-3 border border-amber-100 flex flex-col justify-center items-center">
+          <div className="md:col-span-2 lg:col-span-4 mt-2">
+            <h4 className="text-sm font-medium text-gray-900 border-b pb-2 mb-3">Stones & Beads (Optional)</h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Stones Wt (g)</label>
+                <input name="stones_weight" type="number" step="0.001" className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Stones Price (₹)</label>
+                <input name="stones_price" type="number" step="0.01" className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Beads Wt (g)</label>
+                <input name="beads_weight" type="number" step="0.001" className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Extra Beads</label>
+                <input name="extra_beads" type="number" step="0.001" className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors" />
+              </div>
+            </div>
+          </div>
+          <div className="md:col-span-2 lg:col-span-4 bg-amber-50 rounded-xl p-3 border border-amber-100 flex flex-col justify-center items-center mt-2">
              <span className="text-xs font-semibold text-amber-700 uppercase tracking-wider mb-1">Fine Gold Calculation</span>
              <span className="text-lg font-bold text-amber-900">{fineGold.toFixed(3)}g</span>
           </div>

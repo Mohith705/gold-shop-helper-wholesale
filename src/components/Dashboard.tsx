@@ -175,7 +175,22 @@ export function Dashboard({
                         </div>
                       </td>
                       <td className="p-5 text-gray-700 font-medium">{tx.item_name} {activeTab === 'RETAIL' && tx.is_lump_sum && <span className="ml-2 inline-block px-2 py-0.5 bg-gray-100 text-gray-600 rounded-md text-[10px] uppercase font-bold tracking-wider">Lump Sum</span>}</td>
-                      <td className="p-5 text-gray-600 font-medium">{activeTab === 'RETAIL' ? (tx.is_lump_sum ? '-' : `${tx.weight_grams}g`) : `${tx.gross_weight}g`}</td>
+                      <td className="p-5">
+                        {activeTab === 'RETAIL' ? (
+                          <span className="text-gray-600 font-medium">{tx.is_lump_sum ? '-' : `${tx.weight_grams}g`}</span>
+                        ) : (
+                          <div className="flex flex-col">
+                            <span className="text-gray-600 font-medium">{tx.gross_weight}g Gross</span>
+                            {(Number(tx.stones_weight) > 0 || Number(tx.beads_weight) > 0 || Number(tx.extra_beads) > 0) && (
+                              <span className="text-[10px] text-gray-500 font-medium mt-1">
+                                {Number(tx.stones_weight) > 0 ? `S: ${tx.stones_weight}g ` : ''}
+                                {Number(tx.beads_weight) > 0 ? `B: ${tx.beads_weight}g ` : ''}
+                                {Number(tx.extra_beads) > 0 ? `Ex.B: ${tx.extra_beads}g` : ''}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </td>
                       <td className="p-5 font-bold text-gray-900 tracking-tight">₹{tx.total_amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                       <td className="p-5 text-gray-500 text-sm font-medium">
                         {new Date(tx.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
@@ -245,9 +260,18 @@ export function Dashboard({
                     </div>
                   </div>
                   
-                  <div className="flex justify-between items-center bg-gray-50/50 p-3 rounded-xl border border-gray-100/50 text-sm">
-                    <div className="text-gray-700 font-medium">{tx.item_name} {activeTab === 'RETAIL' && tx.is_lump_sum && <span className="ml-1 inline-block px-1.5 py-0.5 bg-gray-200 text-gray-600 rounded text-[9px] uppercase font-bold tracking-wider">Lump Sum</span>}</div>
-                    <div className="text-gray-500">{activeTab === 'RETAIL' ? (tx.is_lump_sum ? '-' : `${tx.weight_grams}g`) : `${tx.gross_weight}g`}</div>
+                  <div className="flex flex-col gap-1 bg-gray-50/50 p-3 rounded-xl border border-gray-100/50 text-sm">
+                    <div className="flex justify-between items-center">
+                      <div className="text-gray-700 font-medium">{tx.item_name} {activeTab === 'RETAIL' && tx.is_lump_sum && <span className="ml-1 inline-block px-1.5 py-0.5 bg-gray-200 text-gray-600 rounded text-[9px] uppercase font-bold tracking-wider">Lump Sum</span>}</div>
+                      <div className="text-gray-500 font-semibold">{activeTab === 'RETAIL' ? (tx.is_lump_sum ? '-' : `${tx.weight_grams}g`) : `${tx.gross_weight}g Gross`}</div>
+                    </div>
+                    {activeTab === 'WHOLESALE' && (Number(tx.stones_weight) > 0 || Number(tx.beads_weight) > 0 || Number(tx.extra_beads) > 0) && (
+                      <div className="text-[11px] text-gray-500 font-medium text-right flex justify-end gap-2">
+                        {Number(tx.stones_weight) > 0 && <span>S: {tx.stones_weight}g</span>}
+                        {Number(tx.beads_weight) > 0 && <span>B: {tx.beads_weight}g</span>}
+                        {Number(tx.extra_beads) > 0 && <span>Ex.B: {tx.extra_beads}g</span>}
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-3 w-full">

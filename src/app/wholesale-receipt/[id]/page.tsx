@@ -111,7 +111,17 @@ export default async function WholesaleReceiptPage(
               <tbody className="divide-y divide-black border-b border-black">
               <tr className="divide-x divide-black h-24 align-top">
                 <td className="p-2">1</td>
-                <td className="p-2 text-left">{transaction.item_name} {transaction.transaction_type === 'RECEIPT' ? '(Recv)' : ''}</td>
+                <td className="p-2 text-left">
+                  <div>{transaction.item_name} {transaction.transaction_type === 'RECEIPT' ? '(Recv)' : ''}</div>
+                  {(Number(transaction.stones_weight) > 0 || Number(transaction.beads_weight) > 0 || Number(transaction.extra_beads) > 0) && (
+                    <div className="text-[10px] text-gray-500 mt-1">
+                      {Number(transaction.stones_weight) > 0 ? `Stones: ${Number(transaction.stones_weight).toFixed(3)}g ` : ''}
+                      {Number(transaction.stones_price) > 0 ? `(₹${Number(transaction.stones_price).toFixed(2)}) ` : ''}
+                      {Number(transaction.beads_weight) > 0 ? `Beads: ${Number(transaction.beads_weight).toFixed(3)}g ` : ''}
+                      {Number(transaction.extra_beads) > 0 ? `Ex.Beads: ${Number(transaction.extra_beads).toFixed(3)}g` : ''}
+                    </div>
+                  )}
+                </td>
                 <td className="p-2">{Number(transaction.gross_weight).toFixed(3)}</td>
                 <td className="p-2">{Number(transaction.net_weight).toFixed(3)}</td>
                 <td className="p-2">{Number(transaction.touch_percentage).toFixed(2)}</td>
