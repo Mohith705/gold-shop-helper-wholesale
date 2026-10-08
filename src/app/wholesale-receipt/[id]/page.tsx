@@ -73,20 +73,20 @@ export default async function WholesaleReceiptPage(
         </div>
 
         {/* Receipt Container */}
-        <div id="receipt-container" className="bg-white p-8 sm:p-12 print:p-0 shadow-lg print:shadow-none mx-auto w-full max-w-4xl font-sans text-sm border border-gray-200">
+        <div id="receipt-container" className="bg-white p-4 sm:p-12 print:p-0 shadow-lg print:shadow-none mx-auto w-full max-w-4xl font-sans text-xs sm:text-sm border border-gray-200">
           
           {/* Header */}
-          <div className="flex justify-between items-start mb-8">
+          <div className="flex justify-between items-start mb-6 sm:mb-8">
             <div>
-              <h1 className="text-xl font-bold uppercase tracking-wider">{customer?.name}</h1>
+              <h1 className="text-lg sm:text-xl font-bold uppercase tracking-wider">{customer?.name}</h1>
               <p className="text-gray-600 mt-1">Ph # {customer?.phone}</p>
             </div>
             <div className="text-right">
-              <div className="grid grid-cols-[80px_1fr] text-left">
+              <div className="grid grid-cols-[60px_1fr] sm:grid-cols-[80px_1fr] text-left">
                 <span className="font-semibold text-gray-700">Vou.No.:</span>
                 <span className="font-medium">{transaction.invoice_number}</span>
               </div>
-              <div className="grid grid-cols-[80px_1fr] text-left mt-1">
+              <div className="grid grid-cols-[60px_1fr] sm:grid-cols-[80px_1fr] text-left mt-1">
                 <span className="font-semibold text-gray-700">Date:</span>
                 <span className="font-medium">{new Date(transaction.created_at).toLocaleDateString('en-GB')}</span>
               </div>
@@ -94,20 +94,21 @@ export default async function WholesaleReceiptPage(
           </div>
 
           {/* Table */}
-          <table className="w-full border-collapse border border-black mb-8 text-center">
-            <thead>
-              <tr className="border-b border-black divide-x divide-black font-semibold">
-                <th className="p-2 w-10">S</th>
-                <th className="p-2 text-left">Description</th>
-                <th className="p-2 w-24">Gross Wt.</th>
-                <th className="p-2 w-24">Net Wt.</th>
-                <th className="p-2 w-20">Tnch</th>
-                <th className="p-2 w-24">Gold</th>
-                <th className="p-2 w-20">Rate</th>
-                <th className="p-2 w-24">Amt.</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-black border-b border-black">
+          <div className="overflow-x-auto border border-black mb-6 sm:mb-8">
+            <table className="w-full min-w-[650px] sm:min-w-full border-collapse text-center">
+              <thead>
+                <tr className="border-b border-black divide-x divide-black font-semibold bg-gray-50/50">
+                  <th className="p-1 sm:p-2 w-10">S</th>
+                  <th className="p-1 sm:p-2 text-left">Description</th>
+                  <th className="p-1 sm:p-2 w-20 sm:w-24">Gross Wt.</th>
+                  <th className="p-1 sm:p-2 w-20 sm:w-24">Net Wt.</th>
+                  <th className="p-1 sm:p-2 w-16 sm:w-20">Tnch</th>
+                  <th className="p-1 sm:p-2 w-20 sm:w-24">Gold</th>
+                  <th className="p-1 sm:p-2 w-16 sm:w-20">Rate</th>
+                  <th className="p-1 sm:p-2 w-20 sm:w-24">Amt.</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-black border-b border-black">
               <tr className="divide-x divide-black h-24 align-top">
                 <td className="p-2">1</td>
                 <td className="p-2 text-left">{transaction.item_name} {transaction.transaction_type === 'RECEIPT' ? '(Recv)' : ''}</td>
@@ -137,6 +138,7 @@ export default async function WholesaleReceiptPage(
               </tr>
             </tbody>
           </table>
+          </div>
 
           {/* Item Image */}
           {transaction.image_url && (
