@@ -44,6 +44,9 @@ export type StockItem = {
   net_weight: number;
   touch_percentage: number;
   quantity: number;
+  stones_weight: number;
+  stones_price: number;
+  beads_weight: number;
   created_at: string;
   updated_at: string;
 };

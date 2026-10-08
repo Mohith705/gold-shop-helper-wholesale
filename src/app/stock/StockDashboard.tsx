@@ -16,7 +16,10 @@ export function StockDashboard({ initialStock }: { initialStock: StockItem[] }) 
     gross_weight: '',
     net_weight: '',
     touch_percentage: '',
-    quantity: '1'
+    quantity: '1',
+    stones_weight: '0',
+    stones_price: '0',
+    beads_weight: '0'
   })
 
   const supabase = createClient()
@@ -31,14 +34,17 @@ export function StockDashboard({ initialStock }: { initialStock: StockItem[] }) 
         gross_weight: Number(formData.gross_weight),
         net_weight: Number(formData.net_weight),
         touch_percentage: Number(formData.touch_percentage),
-        quantity: Number(formData.quantity)
+        quantity: Number(formData.quantity),
+        stones_weight: Number(formData.stones_weight),
+        stones_price: Number(formData.stones_price),
+        beads_weight: Number(formData.beads_weight)
       }).select()
 
       if (error) throw error
       if (data) {
         setStock([data[0], ...stock])
         setIsAdding(false)
-        setFormData({ item_name: '', gross_weight: '', net_weight: '', touch_percentage: '', quantity: '1' })
+        setFormData({ item_name: '', gross_weight: '', net_weight: '', touch_percentage: '', quantity: '1', stones_weight: '0', stones_price: '0', beads_weight: '0' })
       }
     } catch (err) {
       console.error('Error adding stock:', err)
@@ -64,7 +70,7 @@ export function StockDashboard({ initialStock }: { initialStock: StockItem[] }) 
       {isAdding && (
         <form onSubmit={handleAddStock} className="bg-white p-6 rounded-2xl shadow-sm border border-amber-200/60 animate-in slide-in-from-top-2">
           <h3 className="text-lg font-bold text-gray-800 mb-4">Add New Stock Item</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Item Name</label>
               <input required type="text" value={formData.item_name} onChange={e => setFormData({...formData, item_name: e.target.value})} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-amber-500 focus:border-amber-500" placeholder="e.g. Chain cb" />
@@ -80,6 +86,20 @@ export function StockDashboard({ initialStock }: { initialStock: StockItem[] }) 
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Touch %</label>
               <input required type="number" step="0.01" value={formData.touch_percentage} onChange={e => setFormData({...formData, touch_percentage: e.target.value})} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-amber-500 focus:border-amber-500" placeholder="e.g. 96.00" />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Stones Wt (g)</label>
+              <input type="number" step="0.001" value={formData.stones_weight} onChange={e => setFormData({...formData, stones_weight: e.target.value})} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-amber-500 focus:border-amber-500" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Stones Price (₹)</label>
+              <input type="number" step="0.01" value={formData.stones_price} onChange={e => setFormData({...formData, stones_price: e.target.value})} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-amber-500 focus:border-amber-500" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Beads Wt (g)</label>
+              <input type="number" step="0.001" value={formData.beads_weight} onChange={e => setFormData({...formData, beads_weight: e.target.value})} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-amber-500 focus:border-amber-500" />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Quantity</label>
@@ -124,13 +144,15 @@ export function StockDashboard({ initialStock }: { initialStock: StockItem[] }) 
         ) : (
           <div>
             {/* Desktop Table View */}
-            <div className="hidden md:block overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+            <div className="hidden lg:block overflow-x-auto">
+              <table className="w-full text-left border-collapse whitespace-nowrap">
                 <thead>
                   <tr className="bg-amber-50/50 border-b border-amber-100/50 text-xs font-semibold text-amber-900/70 uppercase tracking-wider">
                     <th className="p-4">Item Name</th>
                     <th className="p-4">Gross Wt</th>
                     <th className="p-4">Net Wt</th>
+                    <th className="p-4">Stones (Wt/₹)</th>
+                    <th className="p-4">Beads Wt</th>
                     <th className="p-4">Touch %</th>
                     <th className="p-4">Fine Gold</th>
                     <th className="p-4">Qty</th>
@@ -143,6 +165,14 @@ export function StockDashboard({ initialStock }: { initialStock: StockItem[] }) 
                       <td className="p-4 font-medium text-gray-900">{item.item_name}</td>
                       <td className="p-4 text-gray-600">{Number(item.gross_weight).toFixed(3)}g</td>
                       <td className="p-4 text-gray-600">{Number(item.net_weight).toFixed(3)}g</td>
+                      <td className="p-4 text-gray-600">
+                        {Number(item.stones_weight) > 0 || Number(item.stones_price) > 0 
+                          ? `${Number(item.stones_weight).toFixed(3)}g / ₹${Number(item.stones_price).toFixed(2)}`
+                          : '-'}
+                      </td>
+                      <td className="p-4 text-gray-600">
+                        {Number(item.beads_weight) > 0 ? `${Number(item.beads_weight).toFixed(3)}g` : '-'}
+                      </td>
                       <td className="p-4 text-gray-600">{Number(item.touch_percentage).toFixed(2)}%</td>
                       <td className="p-4 font-semibold text-amber-700">
                         {((Number(item.net_weight) * Number(item.touch_percentage)) / 100).toFixed(3)}g
@@ -160,7 +190,7 @@ export function StockDashboard({ initialStock }: { initialStock: StockItem[] }) 
             </div>
 
             {/* Mobile Cards View */}
-            <div className="md:hidden divide-y divide-gray-100">
+            <div className="lg:hidden divide-y divide-gray-100">
               {stock.map((item, i) => (
                 <div key={item.id} className="p-5 space-y-4 animate-in slide-in-from-bottom-2 fade-in" style={{ animationDelay: `${i * 50}ms`, animationFillMode: 'both' }}>
                   <div className="flex justify-between items-start">
@@ -193,7 +223,25 @@ export function StockDashboard({ initialStock }: { initialStock: StockItem[] }) 
                       <div className="text-gray-700 font-medium">{Number(item.touch_percentage).toFixed(2)}%</div>
                     </div>
                   </div>
-                  
+
+                  {(Number(item.stones_weight) > 0 || Number(item.beads_weight) > 0) && (
+                    <div className="grid grid-cols-2 gap-2 bg-amber-50/30 p-3 rounded-xl border border-amber-100/50 text-sm text-center">
+                      <div>
+                        <div className="text-gray-400 text-[10px] uppercase tracking-wider font-semibold mb-0.5">Stones (Wt / ₹)</div>
+                        <div className="text-gray-700 font-medium">
+                          {Number(item.stones_weight) > 0 ? `${Number(item.stones_weight).toFixed(3)}g` : '-'}
+                          {Number(item.stones_price) > 0 ? ` / ₹${Number(item.stones_price).toFixed(2)}` : ''}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-gray-400 text-[10px] uppercase tracking-wider font-semibold mb-0.5">Beads Wt</div>
+                        <div className="text-gray-700 font-medium">
+                          {Number(item.beads_weight) > 0 ? `${Number(item.beads_weight).toFixed(3)}g` : '-'}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <Link href={`/stock/${item.id}`} className="block w-full py-2.5 bg-amber-50 text-amber-700 text-center rounded-xl text-sm font-semibold hover:bg-amber-100 transition-colors">
                     View History
                   </Link>
