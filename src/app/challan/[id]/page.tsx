@@ -42,9 +42,14 @@ export default async function DeliveryChallanPage({ params }: { params: Promise<
   if (challan.cgst_amount) whatsappText += `*CGST:* ₹${Number(challan.cgst_amount).toFixed(2)}\n`
   if (challan.sgst_amount) whatsappText += `*SGST:* ₹${Number(challan.sgst_amount).toFixed(2)}\n`
   if (challan.igst_amount) whatsappText += `*IGST:* ₹${Number(challan.igst_amount).toFixed(2)}\n`
-  whatsappText += `*Grand Total:* ₹${Number(challan.total_amount).toFixed(2)}`
+  whatsappText += `*Grand Total:* ₹${Number(challan.total_amount).toFixed(2)}\n`
   
-  const encodedWhatsappText = encodeURIComponent(whatsappText)
+  if (Number(challan.amount_paid) > 0) {
+    whatsappText += `*Amount Paid:* ₹${Number(challan.amount_paid).toFixed(2)}\n`
+    whatsappText += `*Balance Due:* ₹${Number(challan.balance_amount).toFixed(2)}`
+  }
+  
+  const encodedWhatsappText = encodeURIComponent(whatsappText.trim())
 
   return (
     <main className="min-h-screen bg-gray-100 text-slate-900 p-4 md:p-8 font-sans selection:bg-amber-200 selection:text-amber-900">
@@ -202,6 +207,19 @@ export default async function DeliveryChallanPage({ params }: { params: Promise<
                   <span className="text-blue-900 text-left w-full sm:w-auto">Grand Total</span>
                   <span className="text-right w-full sm:w-auto">{Number(challan.total_amount).toFixed(2)}</span>
                 </div>
+                
+                {Number(challan.amount_paid) > 0 && (
+                  <>
+                    <div className="flex justify-between items-center p-1 sm:p-2 border-b border-blue-800 text-[10px] sm:text-sm gap-2">
+                      <span className="text-blue-900 font-semibold whitespace-nowrap">Amount Paid</span>
+                      <span className="text-right text-green-700 font-bold">{Number(challan.amount_paid).toFixed(2)}</span>
+                    </div>
+                    <div className="flex flex-col sm:flex-row justify-between items-end sm:items-center p-1 sm:p-2 border-b border-blue-800 text-[10px] sm:text-sm font-bold bg-blue-50/30 gap-1 sm:gap-2">
+                      <span className="text-blue-900 text-left w-full sm:w-auto">Balance Due</span>
+                      <span className="text-right w-full sm:w-auto text-red-600">{Number(challan.balance_amount).toFixed(2)}</span>
+                    </div>
+                  </>
+                )}
                 
                 <div className="p-3 text-center mt-12 flex flex-col items-center">
                   <span className="text-blue-900 font-bold text-xs uppercase mb-8 block">For VYSHNAVI JEWELLERS</span>

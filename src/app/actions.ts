@@ -441,6 +441,9 @@ export async function createDeliveryChallan(formData: FormData) {
   const totalTaxableValue = parseFloat(formData.get('total_taxable_value') as string) || 0
   const totalAmount = parseFloat(formData.get('total_amount') as string) || 0
 
+  const amountPaid = parseFloat(formData.get('amount_paid') as string) || 0
+  const balanceAmount = parseFloat(formData.get('balance_amount') as string) || 0
+
   // Generate DC Number
   const { count } = await supabase.from('delivery_challans').select('*', { count: 'exact', head: true })
   const nextNumber = (count || 0) + 1
@@ -463,7 +466,9 @@ export async function createDeliveryChallan(formData: FormData) {
       cgst_amount: cgstAmount,
       sgst_amount: sgstAmount,
       igst_amount: igstAmount,
-      total_amount: totalAmount
+      total_amount: totalAmount,
+      amount_paid: amountPaid,
+      balance_amount: balanceAmount
     })
     .select('id')
     .single()

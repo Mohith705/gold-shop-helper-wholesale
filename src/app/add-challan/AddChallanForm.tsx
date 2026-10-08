@@ -14,6 +14,7 @@ export function AddChallanForm() {
   ])
 
   const [gstIncluded, setGstIncluded] = useState<boolean>(false)
+  const [amountPaid, setAmountPaid] = useState<number>(0)
 
   const addItem = () => {
     setItems([...items, { id: Date.now().toString(), desc: '', hsn: '', uom: 'GMS', qty: 0, rate: 0 }])
@@ -47,6 +48,7 @@ export function AddChallanForm() {
   const sgst = totalTaxable * 0.015
   const igst = 0
   const totalAmount = totalTaxable + cgst + sgst + igst
+  const balanceAmount = totalAmount - amountPaid
 
   async function handleSubmit(formData: FormData) {
     formData.append('items', JSON.stringify(itemsWithTaxable))
@@ -55,6 +57,8 @@ export function AddChallanForm() {
     formData.append('sgst_amount', sgst.toString())
     formData.append('igst_amount', igst.toString())
     formData.append('total_amount', totalAmount.toString())
+    formData.append('amount_paid', amountPaid.toString())
+    formData.append('balance_amount', balanceAmount.toString())
 
     startTransition(async () => {
       const res = await createDeliveryChallan(formData)
@@ -184,9 +188,32 @@ export function AddChallanForm() {
           
           <div className="h-px bg-amber-200/50 w-full mb-4"></div>
           
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center mb-4">
             <span className="text-amber-900 font-semibold">Total Amount After Tax</span>
             <span className="text-2xl font-black text-amber-600 tracking-tight">₹{totalAmount.toFixed(2)}</span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 p-4 bg-white rounded-xl border border-amber-200">
+            <div>
+              <label className="block text-sm font-medium text-amber-900 mb-1">Amount Paid</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">₹</span>
+                <input 
+                  type="number" 
+                  step="0.01" 
+                  value={amountPaid || ''} 
+                  onChange={(e) => setAmountPaid(parseFloat(e.target.value) || 0)}
+                  className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors font-semibold"
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+            <div className="flex flex-col justify-end text-right">
+              <span className="text-sm font-medium text-amber-900 mb-1">Balance Due</span>
+              <span className={`text-xl font-bold ${balanceAmount > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                ₹{balanceAmount.toFixed(2)}
+              </span>
+            </div>
           </div>
         </div>
       </section>
