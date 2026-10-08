@@ -23,6 +23,29 @@ export default async function DeliveryChallanPage({ params }: { params: Promise<
 
   const amountInWords = numberToWords(Math.round(challan.total_amount))
 
+  let whatsappText = `*DELIVERY CHALLAN*\n\n`
+  whatsappText += `*VYSHNAVI JEWELLERS*\n`
+  whatsappText += `NELLORE - 524 001\n`
+  whatsappText += `Cell : 9849643134\n\n`
+  
+  whatsappText += `*To:* ${challan.customer_name}\n`
+  if (challan.customer_address) whatsappText += `*Address:* ${challan.customer_address}\n`
+  whatsappText += `*D.C. No:* ${challan.dc_number}\n`
+  whatsappText += `*Date:* ${new Date(challan.dc_date).toLocaleDateString('en-IN')}\n\n`
+  
+  whatsappText += `*Items:*\n`
+  challan.items?.forEach((item: any, i: number) => {
+    whatsappText += `${i + 1}. ${item.desc} (Qty: ${item.qty} ${item.uom} @ ₹${item.rate})\n`
+  })
+  
+  whatsappText += `\n*Taxable Value:* ₹${(Number(challan.total_amount) - Number(challan.cgst_amount || 0) - Number(challan.sgst_amount || 0) - Number(challan.igst_amount || 0)).toFixed(2)}\n`
+  if (challan.cgst_amount) whatsappText += `*CGST:* ₹${Number(challan.cgst_amount).toFixed(2)}\n`
+  if (challan.sgst_amount) whatsappText += `*SGST:* ₹${Number(challan.sgst_amount).toFixed(2)}\n`
+  if (challan.igst_amount) whatsappText += `*IGST:* ₹${Number(challan.igst_amount).toFixed(2)}\n`
+  whatsappText += `*Grand Total:* ₹${Number(challan.total_amount).toFixed(2)}`
+  
+  const encodedWhatsappText = encodeURIComponent(whatsappText)
+
   return (
     <main className="min-h-screen bg-gray-100 text-slate-900 p-4 md:p-8 font-sans selection:bg-amber-200 selection:text-amber-900">
       <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500">
@@ -32,7 +55,7 @@ export default async function DeliveryChallanPage({ params }: { params: Promise<
           </Link>
           <div className="flex gap-3">
             <a 
-              href={`https://wa.me/?text=Here is the Delivery Challan (${challan.dc_number}): [Link]`}
+              href={`https://wa.me/?text=${encodedWhatsappText}`}
               target="_blank"
               rel="noopener noreferrer"
               className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl flex items-center gap-2 font-semibold transition-all shadow-md"
