@@ -6,6 +6,7 @@ import { createClient } from '@/utils/supabase/server'
 export default async function AddWholesaleEntryPage() {
   const supabase = await createClient()
   const { data: stockItems } = await supabase.from('stock_items').select('*').gt('net_weight', 0)
+  const { data: customers } = await supabase.from('customers').select('*').order('name')
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-[#FCFBF8] to-[#F5F2EB] text-slate-900 p-4 md:p-8 font-sans selection:bg-amber-200 selection:text-amber-900">
@@ -22,7 +23,7 @@ export default async function AddWholesaleEntryPage() {
         </header>
 
         <div className="bg-white/70 backdrop-blur-md rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-amber-100/50 overflow-hidden p-6 md:p-8">
-          <AddWholesaleForm availableStock={stockItems || []} />
+          <AddWholesaleForm availableStock={stockItems || []} existingCustomers={customers || []} />
         </div>
       </div>
     </main>

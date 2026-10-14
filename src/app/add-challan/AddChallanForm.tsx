@@ -1,20 +1,136 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createDeliveryChallan } from '../actions'
-import { Loader2, Plus, Trash2 } from 'lucide-react'
+import { Loader2, Plus, Trash2, CheckCircle2, RotateCcw } from 'lucide-react'
+
+const DRAFT_KEY = 'challan_order_draft_v1'
 
 export function AddChallanForm() {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
+  const [isInitialized, setIsInitialized] = useState(false)
+  const [hasDraft, setHasDraft] = useState(false)
   
+  // Party & Transport States
+  const [customerName, setCustomerName] = useState<string>('')
+  const [customerAddress, setCustomerAddress] = useState<string>('')
+  const [customerGstin, setCustomerGstin] = useState<string>('')
+  const [customerState, setCustomerState] = useState<string>('')
+  const [transportMode, setTransportMode] = useState<string>('')
+  const [vehicleNumber, setVehicleNumber] = useState<string>('')
+  const [placeOfSupply, setPlaceOfSupply] = useState<string>('')
+
   const [items, setItems] = useState<{ id: string, desc: string, hsn: string, uom: string, qty: number, rate: number }[]>([
     { id: '1', desc: '', hsn: '', uom: 'GMS', qty: 0, rate: 0 }
   ])
 
   const [gstIncluded, setGstIncluded] = useState<boolean>(false)
   const [amountPaid, setAmountPaid] = useState<number>(0)
+
+  // Restore draft on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY)
+      if (saved) {
+        const d = JSON.parse(saved)
+        if (d.customerName) setCustomerName(d.customerName)
+        if (d.customerAddress) setCustomerAddress(d.customerAddress)
+        if (d.customerGstin) setCustomerGstin(d.customerGstin)
+        if (d.customerState) setCustomerState(d.customerState)
+        if (d.transportMode) setTransportMode(d.transportMode)
+        if (d.vehicleNumber) setVehicleNumber(d.vehicleNumber)
+        if (d.placeOfSupply) setPlaceOfSupply(d.placeOfSupply)
+        if (d.gstIncluded !== undefined) setGstIncluded(d.gstIncluded)
+        if (d.amountPaid !== undefined) setAmountPaid(d.amountPaid)
+        if (d.items && Array.isArray(d.items) && d.items.length > 0) setItems(d.items)
+        setHasDraft(true)
+      }
+    } catch (e) {
+      console.error('Failed to load challan draft', e)
+    }
+    setIsInitialized(true)
+  }, [])
+
+  // Auto-save draft on every change and tab switch
+  useEffect(() => {
+    if (!isInitialized) return
+
+    const saveDraftNow = () => {
+      const draftData = {
+        customerName,
+        customerAddress,
+        customerGstin,
+        customerState,
+        transportMode,
+        vehicleNumber,
+        placeOfSupply,
+        gstIncluded,
+        amountPaid,
+        items
+      }
+      const hasContent = Boolean(
+        customerName || customerAddress || customerGstin || transportMode || 
+        vehicleNumber || placeOfSupply || amountPaid > 0 || 
+        items.some(i => i.desc || i.qty > 0 || i.rate > 0)
+      )
+      if (hasContent) {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(draftData))
+        setHasDraft(true)
+      } else {
+        localStorage.removeItem(DRAFT_KEY)
+        setHasDraft(false)
+      }
+    }
+
+    saveDraftNow()
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        saveDraftNow()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('pagehide', saveDraftNow)
+    window.addEventListener('beforeunload', saveDraftNow)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('pagehide', saveDraftNow)
+      window.removeEventListener('beforeunload', saveDraftNow)
+    }
+  }, [
+    isInitialized,
+    customerName,
+    customerAddress,
+    customerGstin,
+    customerState,
+    transportMode,
+    vehicleNumber,
+    placeOfSupply,
+    gstIncluded,
+    amountPaid,
+    items
+  ])
+
+  const handleReset = () => {
+    if (confirm('Are you sure you want to clear the form? All entered details will be reset.')) {
+      localStorage.removeItem(DRAFT_KEY)
+      setCustomerName('')
+      setCustomerAddress('')
+      setCustomerGstin('')
+      setCustomerState('')
+      setTransportMode('')
+      setVehicleNumber('')
+      setPlaceOfSupply('')
+      setGstIncluded(false)
+      setAmountPaid(0)
+      setItems([{ id: '1', desc: '', hsn: '', uom: 'GMS', qty: 0, rate: 0 }])
+      setHasDraft(false)
+    }
+  }
 
   const addItem = () => {
     setItems([...items, { id: Date.now().toString(), desc: '', hsn: '', uom: 'GMS', qty: 0, rate: 0 }])
@@ -65,6 +181,9 @@ export function AddChallanForm() {
       if (res?.error) {
         alert(res.error)
       } else if (res?.success) {
+        try {
+          localStorage.removeItem(DRAFT_KEY)
+        } catch (e) {}
         router.push(`/challan/${res.challanId}`)
       }
     })
@@ -72,24 +191,67 @@ export function AddChallanForm() {
 
   return (
     <form action={handleSubmit} className="space-y-8">
+      {/* Draft Status Banner */}
+      {hasDraft && (
+        <div className="flex items-center justify-between bg-amber-50/90 border border-amber-200/80 px-4 py-2.5 rounded-2xl text-xs text-amber-900 shadow-sm animate-in fade-in">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+            <span>Draft automatically saved &mdash; switching tabs will <strong>not</strong> clear your data.</span>
+          </div>
+          <button
+            type="button"
+            onClick={handleReset}
+            className="inline-flex items-center gap-1 text-amber-800 hover:text-red-600 font-semibold transition-colors cursor-pointer ml-2 shrink-0"
+          >
+            <RotateCcw size={12} />
+            Reset
+          </button>
+        </div>
+      )}
+
       <section className="space-y-4">
         <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Party Details</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Name / Business Name</label>
-            <input required name="customer_name" type="text" className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors" />
+            <input 
+              required 
+              name="customer_name" 
+              type="text" 
+              value={customerName}
+              onChange={e => setCustomerName(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors" 
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-            <input name="customer_address" type="text" className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors" />
+            <input 
+              name="customer_address" 
+              type="text" 
+              value={customerAddress}
+              onChange={e => setCustomerAddress(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors" 
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">GSTIN</label>
-            <input name="customer_gstin" type="text" className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors uppercase" />
+            <input 
+              name="customer_gstin" 
+              type="text" 
+              value={customerGstin}
+              onChange={e => setCustomerGstin(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors uppercase" 
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
-            <input name="customer_state" type="text" className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors" />
+            <input 
+              name="customer_state" 
+              type="text" 
+              value={customerState}
+              onChange={e => setCustomerState(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors" 
+            />
           </div>
         </div>
       </section>
@@ -99,15 +261,34 @@ export function AddChallanForm() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Transportation Mode</label>
-            <input name="transport_mode" type="text" placeholder="e.g. By Hand, Bus, Train" className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors" />
+            <input 
+              name="transport_mode" 
+              type="text" 
+              value={transportMode}
+              onChange={e => setTransportMode(e.target.value)}
+              placeholder="e.g. By Hand, Bus, Train" 
+              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors" 
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Vehicle Number</label>
-            <input name="vehicle_number" type="text" className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors" />
+            <input 
+              name="vehicle_number" 
+              type="text" 
+              value={vehicleNumber}
+              onChange={e => setVehicleNumber(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors" 
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Place of Supply</label>
-            <input name="place_of_supply" type="text" className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors" />
+            <input 
+              name="place_of_supply" 
+              type="text" 
+              value={placeOfSupply}
+              onChange={e => setPlaceOfSupply(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors" 
+            />
           </div>
         </div>
       </section>

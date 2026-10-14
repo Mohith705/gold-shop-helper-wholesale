@@ -1,8 +1,12 @@
 import { AddEntryForm } from './AddEntryForm'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
+import { createClient } from '@/utils/supabase/server'
 
-export default function AddEntryPage() {
+export default async function AddEntryPage() {
+  const supabase = await createClient()
+  const { data: customers } = await supabase.from('customers').select('*').order('name')
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-[#FCFBF8] to-[#F5F2EB] text-slate-900 p-4 md:p-8 font-sans selection:bg-amber-200 selection:text-amber-900">
       <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in duration-500">
@@ -18,7 +22,7 @@ export default function AddEntryPage() {
         </header>
 
         <div className="bg-white/70 backdrop-blur-md rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-amber-100/50 overflow-hidden p-6 md:p-8">
-          <AddEntryForm />
+          <AddEntryForm existingCustomers={customers || []} />
         </div>
       </div>
     </main>
