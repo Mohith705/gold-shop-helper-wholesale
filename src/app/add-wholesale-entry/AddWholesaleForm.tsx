@@ -379,20 +379,20 @@ export function AddWholesaleForm({
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="md:col-span-2 lg:col-span-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Item Description</label>
-            <input required name="item_name" type="text" value={itemName} onChange={e => setItemName(e.target.value)} placeholder={transactionType === 'SALE' ? "e.g. Chain cb" : "e.g. Old Ring"} className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors" />
+            <label className="block text-sm font-medium text-gray-700 mb-1">Item Description <span className="text-gray-400 font-normal">(Optional)</span></label>
+            <input name="item_name" type="text" value={itemName} onChange={e => setItemName(e.target.value)} placeholder={transactionType === 'SALE' ? "e.g. Chain cb" : "e.g. Old Ring"} className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Gross Wt (g)</label>
-            <input required name="gross_weight" type="number" step="0.001" value={grossWeight || ''} onChange={e => setGrossWeight(parseFloat(e.target.value) || 0)} className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors" />
+            <label className="block text-sm font-medium text-gray-700 mb-1">Gross Wt (g) <span className="text-gray-400 font-normal">(Optional)</span></label>
+            <input name="gross_weight" type="number" step="0.001" value={grossWeight || ''} onChange={e => setGrossWeight(parseFloat(e.target.value) || 0)} className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Net Wt (g)</label>
-            <input required name="net_weight" type="number" step="0.001" value={netWeight || ''} onChange={e => setNetWeight(parseFloat(e.target.value) || 0)} className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors" />
+            <label className="block text-sm font-medium text-gray-700 mb-1">Net Wt (g) <span className="text-gray-400 font-normal">(Optional)</span></label>
+            <input name="net_weight" type="number" step="0.001" value={netWeight || ''} onChange={e => setNetWeight(parseFloat(e.target.value) || 0)} className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Touch (Tnch) %</label>
-            <input required name="touch_percentage" type="number" step="0.01" value={touchPercentage || ''} onChange={e => setTouchPercentage(parseFloat(e.target.value) || 0)} className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors" />
+            <label className="block text-sm font-medium text-gray-700 mb-1">Touch (Tnch) % <span className="text-gray-400 font-normal">(Optional)</span></label>
+            <input name="touch_percentage" type="number" step="0.01" value={touchPercentage || ''} onChange={e => setTouchPercentage(parseFloat(e.target.value) || 0)} className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors" />
           </div>
           <div className="md:col-span-2 lg:col-span-4 mt-2">
             <h4 className="text-sm font-medium text-gray-900 border-b pb-2 mb-3">Stones & Beads (Optional)</h4>

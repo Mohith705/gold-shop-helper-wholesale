@@ -6,11 +6,11 @@ import { revalidatePath } from 'next/cache'
 export async function addCustomerAndTransaction(formData: FormData) {
   const supabase = await createClient()
 
-  const customerName = formData.get('name') as string
+  const customerName = (formData.get('name') as string)?.trim() || 'Customer'
   const phone = formData.get('phone') as string
   const address = formData.get('address') as string
 
-  const itemName = formData.get('item_name') as string
+  const itemName = (formData.get('item_name') as string)?.trim() || 'Gold Item'
   const hsnCode = formData.get('hsn_code') as string || '7113'
   const weightGrams = parseFloat(formData.get('weight_grams') as string) || 0
   const wastagePercentage = parseFloat(formData.get('wastage_percentage') as string) || 0
@@ -320,11 +320,11 @@ export async function updateCustomerAndTransaction(formData: FormData) {
 export async function addWholesaleTransaction(formData: FormData) {
   const supabase = await createClient()
 
-  const customerName = formData.get('name') as string
+  const customerName = (formData.get('name') as string)?.trim() || 'Customer'
   const phone = formData.get('phone') as string
   const address = formData.get('address') as string
 
-  const itemName = formData.get('item_name') as string
+  const itemName = (formData.get('item_name') as string)?.trim() || 'Gold Item'
   const grossWeight = parseFloat(formData.get('gross_weight') as string) || 0
   const netWeight = parseFloat(formData.get('net_weight') as string) || 0
   const touchPercentage = parseFloat(formData.get('touch_percentage') as string) || 0
