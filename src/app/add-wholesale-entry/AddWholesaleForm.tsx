@@ -152,6 +152,18 @@ export function AddWholesaleForm({
     stockDeductions
   ])
 
+  // Auto-calculate Net Weight whenever Gross Weight, Stones Weight, Beads Weight, or Extra Beads change
+  useEffect(() => {
+    if (!isInitialized) return
+    if (grossWeight > 0) {
+      const deductions = (stonesWeight || 0) + (beadsWeight || 0) + (extraBeads || 0)
+      const calculated = parseFloat(Math.max(0, grossWeight - deductions).toFixed(3))
+      setNetWeight(calculated)
+    } else if (grossWeight === 0 && (stonesWeight > 0 || beadsWeight > 0 || extraBeads > 0)) {
+      setNetWeight(0)
+    }
+  }, [isInitialized, grossWeight, stonesWeight, beadsWeight, extraBeads])
+
   // Native Web Contact Picker API Handler
   const handlePickContact = async () => {
     if (!('contacts' in navigator && 'ContactsManager' in window)) {
@@ -384,11 +396,18 @@ export function AddWholesaleForm({
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Gross Wt (g) <span className="text-gray-400 font-normal">(Optional)</span></label>
-            <input name="gross_weight" type="number" step="0.001" value={grossWeight || ''} onChange={e => setGrossWeight(parseFloat(e.target.value) || 0)} className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors" />
+            <input name="gross_weight" type="number" step="0.001" value={grossWeight || ''} onChange={e => setGrossWeight(parseFloat(e.target.value) || 0)} placeholder="0.000" className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Net Wt (g) <span className="text-gray-400 font-normal">(Optional)</span></label>
-            <input name="net_weight" type="number" step="0.001" value={netWeight || ''} onChange={e => setNetWeight(parseFloat(e.target.value) || 0)} className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors" />
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm font-medium text-gray-700">Net Wt (g) <span className="text-amber-700 font-normal text-xs">(Auto-calculated)</span></label>
+              {((stonesWeight || 0) + (beadsWeight || 0) + (extraBeads || 0)) > 0 && (
+                <span className="text-[11px] text-amber-700 font-semibold">
+                  -{((stonesWeight || 0) + (beadsWeight || 0) + (extraBeads || 0)).toFixed(3)}g
+                </span>
+              )}
+            </div>
+            <input name="net_weight" type="number" step="0.001" value={netWeight || ''} onChange={e => setNetWeight(parseFloat(e.target.value) || 0)} placeholder="0.000" className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors font-semibold text-gray-900 bg-amber-50/20" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Touch (Tnch) % <span className="text-gray-400 font-normal">(Optional)</span></label>

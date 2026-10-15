@@ -1,7 +1,7 @@
 'use client'
 
 import { StockItem } from '@/types'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { PlusCircle, Package } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 import Link from 'next/link'
@@ -25,6 +25,25 @@ export function StockDashboard({ initialStock }: { initialStock: StockItem[] }) 
   }
 
   const [formData, setFormData] = useState(defaultForm)
+
+  // Auto-calculate Net Weight from Gross Weight - (Stones + Beads + Extra Beads)
+  useEffect(() => {
+    const g = parseFloat(formData.gross_weight) || 0
+    const s = parseFloat(formData.stones_weight) || 0
+    const b = parseFloat(formData.beads_weight) || 0
+    const eb = parseFloat(formData.extra_beads) || 0
+
+    if (g > 0) {
+      const net = Math.max(0, g - (s + b + eb))
+      const netStr = parseFloat(net.toFixed(3)).toString()
+      setFormData(prev => {
+        if (prev.net_weight !== netStr) {
+          return { ...prev, net_weight: netStr }
+        }
+        return prev
+      })
+    }
+  }, [formData.gross_weight, formData.stones_weight, formData.beads_weight, formData.extra_beads])
 
   const supabase = createClient()
 
@@ -125,8 +144,15 @@ export function StockDashboard({ initialStock }: { initialStock: StockItem[] }) 
               <input required type="number" step="0.001" value={formData.gross_weight} onChange={e => setFormData({...formData, gross_weight: e.target.value})} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-amber-500 focus:border-amber-500" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Net Wt (g)</label>
-              <input required type="number" step="0.001" value={formData.net_weight} onChange={e => setFormData({...formData, net_weight: e.target.value})} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-amber-500 focus:border-amber-500" />
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-medium text-gray-700">Net Wt (g) <span className="text-amber-700 font-normal">(Auto)</span></label>
+                {(Number(formData.stones_weight) > 0 || Number(formData.beads_weight) > 0 || Number(formData.extra_beads) > 0) && (
+                  <span className="text-[10px] text-amber-700 font-bold">
+                    (-{(Number(formData.stones_weight || 0) + Number(formData.beads_weight || 0) + Number(formData.extra_beads || 0)).toFixed(3)}g)
+                  </span>
+                )}
+              </div>
+              <input required type="number" step="0.001" value={formData.net_weight} onChange={e => setFormData({...formData, net_weight: e.target.value})} placeholder="0.000" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-amber-500 focus:border-amber-500 font-semibold bg-amber-50/20" />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Touch %</label>

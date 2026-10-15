@@ -213,10 +213,10 @@ export async function deleteWholesaleTransaction(id: string) {
 }
 
 export async function handleLogin(formData: FormData) {
-  const username = formData.get('username')
-  const password = formData.get('password')
+  const username = (formData.get('username') as string || '').trim().toLowerCase()
+  const password = (formData.get('password') as string || '').trim()
 
-  if (username === 'raja' && password === 'gold1987') {
+  if (username === 'vyshnavi' && password === 'gold 1789') {
     const { cookies } = await import('next/headers')
     const cookieStore = await cookies()
     cookieStore.set('admin_auth', 'authenticated', { 
