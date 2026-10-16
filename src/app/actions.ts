@@ -216,7 +216,7 @@ export async function handleLogin(formData: FormData) {
   const username = (formData.get('username') as string || '').trim().toLowerCase()
   const password = (formData.get('password') as string || '').trim()
 
-  if (username === 'vyshnavi' && password === 'gold 1789') {
+  if (username === 'vyshnavi' && password === 'gold1789') {
     const { cookies } = await import('next/headers')
     const cookieStore = await cookies()
     cookieStore.set('admin_auth', 'authenticated', { 

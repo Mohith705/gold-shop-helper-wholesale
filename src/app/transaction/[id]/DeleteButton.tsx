@@ -15,7 +15,7 @@ export function DeleteButton({ transactionId }: { transactionId: string }) {
     
     if (password === null) return // user cancelled
     
-    if (password !== 'gold 1789') {
+    if (password !== 'gold1789') {
       alert("Incorrect password!")
       return
     }
