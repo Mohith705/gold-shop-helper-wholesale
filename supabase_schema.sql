@@ -76,3 +76,19 @@ CREATE TABLE wholesale_transactions (
 ALTER TABLE gold_transactions ADD COLUMN image_url TEXT;
 ALTER TABLE wholesale_transactions ADD COLUMN image_url TEXT;
 -- You will also need to create a Supabase Storage bucket named 'images' and make it public.
+
+-- Wholesale metadata is structured inside `notes` column as JSON for zero-downtime flexibility:
+-- {
+--   "stamp": "916",
+--   "less_weight": 0.250,
+--   "old_gold_weight": 1.500,
+--   "cash_paid": 5000,
+--   "payments": [ { "id": "...", "amount_paid": 5000, "payment_method": "Cash", "payment_date": "..." } ],
+--   "user_notes": "..."
+-- }
+
+-- Optional: If you prefer dedicated SQL columns in Supabase:
+-- ALTER TABLE wholesale_transactions ADD COLUMN IF NOT EXISTS stamp VARCHAR(50);
+-- ALTER TABLE wholesale_transactions ADD COLUMN IF NOT EXISTS less_weight NUMERIC(10, 3) DEFAULT 0;
+-- ALTER TABLE wholesale_transactions ADD COLUMN IF NOT EXISTS old_gold_weight NUMERIC(10, 3) DEFAULT 0;
+-- ALTER TABLE wholesale_transactions ADD COLUMN IF NOT EXISTS cash_paid NUMERIC(12, 2) DEFAULT 0;

@@ -1,16 +1,17 @@
 import { createClient } from '@/utils/supabase/server'
-import { ArrowLeft, ReceiptText, PlusCircle, History } from 'lucide-react'
+import { ArrowLeft, ReceiptText, PlusCircle, Coins, Scale, IndianRupee, History } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { DeleteWholesaleButton } from '@/components/DeleteWholesaleButton'
-import { Pencil } from 'lucide-react'
+import { parseWholesaleNotes } from '@/utils/wholesaleNotes'
+import { WholesalePaymentForm } from './WholesalePaymentForm'
 
 export default async function WholesaleTransactionDetailsPage(
   props: {
     params: Promise<{ id: string }>
   }
 ) {
-  const params = await props.params;
+  const params = await props.params
   const supabase = await createClient()
   const { id } = params
 
@@ -27,10 +28,32 @@ export default async function WholesaleTransactionDetailsPage(
   }
 
   const customer = transaction.customers as any
+  const meta = parseWholesaleNotes(transaction.notes)
+
+  const stamp = meta.stamp || (transaction as any).stamp || '-'
+  const lessWeight = meta.less_weight !== undefined ? Number(meta.less_weight) : 0
+  const oldGoldWeight = meta.old_gold_weight !== undefined ? Number(meta.old_gold_weight) : 0
+  const payments = meta.payments || []
+
+  const fineGold = Number(transaction.fine_gold) || 0
+  const grossWeight = Number(transaction.gross_weight) || 0
+  const netWeight = Number(transaction.net_weight) || Math.max(0, grossWeight - lessWeight)
+  const rateAmount = Number(transaction.rate_amount) || 0
+  const totalAmount = Number(transaction.total_amount) || 0
+
+  const payableGold = Math.max(0, fineGold - oldGoldWeight)
+  const totalCashPaid = payments.length > 0 
+    ? payments.reduce((sum, p) => sum + Number(p.amount_paid || 0), 0)
+    : (meta.cash_paid || 0)
+  
+  const cashBalanceDue = Math.max(0, totalAmount - totalCashPaid)
+  const goldEquivalentFromCash = (rateAmount > 0 && totalCashPaid > 0) ? (totalCashPaid / rateAmount) : 0
+  const remainingGoldBalance = Math.max(0, payableGold - goldEquivalentFromCash)
+  const pureGoldDiff = fineGold - oldGoldWeight
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-[#FCFBF8] to-[#F5F2EB] text-slate-900 p-4 md:p-8 font-sans selection:bg-amber-200 selection:text-amber-900">
-      <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500">
+      <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in duration-500">
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <Link href="/" className="text-amber-700/70 hover:text-amber-900 inline-flex items-center gap-2 text-sm font-semibold transition-colors group">
             <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> Back to Dashboard
@@ -41,127 +64,231 @@ export default async function WholesaleTransactionDetailsPage(
               href={`/wholesale-receipt/${transaction.id}`}
               className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 font-semibold transition-all shadow-md shadow-amber-500/20 hover:shadow-lg hover:shadow-amber-500/30 hover:-translate-y-0.5"
             >
-              <ReceiptText size={18} /> View Voucher
+              <ReceiptText size={18} /> View Voucher (Bill)
             </Link>
           </div>
         </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Main Details */}
-          <div className="md:col-span-2 space-y-6">
-            <div className="bg-white/70 backdrop-blur-md p-6 md:p-8 rounded-3xl shadow-sm border border-amber-100/50 transition-all hover:shadow-md">
-              <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                <span className="w-1.5 h-6 bg-amber-500 rounded-full"></span>
-                Shopkeeper Info
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Column */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Shopkeeper Info */}
+            <div className="bg-white/80 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-amber-100/60">
+              <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <span className="w-1.5 h-5 bg-amber-500 rounded-full"></span>
+                Shopkeeper Information
               </h2>
-              <div className="space-y-4 text-sm bg-gray-50/50 p-6 rounded-2xl border border-gray-100/50">
-                <p className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4"><span className="text-gray-500 w-24 font-medium">Name</span> <span className="font-semibold text-gray-900 text-base">{customer?.name}</span></p>
-                <div className="h-px bg-gray-200/50 w-full"></div>
-                <p className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4"><span className="text-gray-500 w-24 font-medium">Phone</span> <span className="text-gray-900 font-medium">{customer?.phone || 'N/A'}</span></p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm bg-amber-50/30 p-4 rounded-2xl border border-amber-100/50">
+                <div>
+                  <span className="text-gray-500 text-xs block mb-0.5">Shop / Person Name</span>
+                  <span className="font-semibold text-gray-900 text-base">{customer?.name}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500 text-xs block mb-0.5">Phone Number</span>
+                  <span className="font-medium text-gray-900">{customer?.phone || 'N/A'}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500 text-xs block mb-0.5">Voucher / Invoice No</span>
+                  <span className="font-semibold text-amber-900">{transaction.invoice_number ? `#${transaction.invoice_number}` : 'N/A'}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500 text-xs block mb-0.5">Order Date</span>
+                  <span className="font-medium text-gray-900">{new Date(transaction.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                </div>
               </div>
             </div>
 
-            <div className="bg-white/70 backdrop-blur-md p-6 md:p-8 rounded-3xl shadow-sm border border-amber-100/50 transition-all hover:shadow-md relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-amber-300/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
-              <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2 relative z-10">
-                <span className="w-1.5 h-6 bg-amber-500 rounded-full"></span>
-                Item Details
+            {/* Order Details */}
+            <div className="bg-white/80 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-amber-100/60">
+              <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <span className="w-1.5 h-5 bg-amber-500 rounded-full"></span>
+                Order Details
               </h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 text-sm relative z-10">
-                <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm md:col-span-2 sm:col-span-3">
-                  <span className="text-gray-500 block mb-1 font-medium">Description</span> 
-                  <span className="font-semibold text-gray-900">{transaction.item_name} {transaction.transaction_type === 'RECEIPT' && <span className="inline-block ml-2 text-[10px] uppercase tracking-wider text-green-700 font-bold bg-green-100 rounded px-2 py-0.5">Received Old Gold</span>}</span>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+                <div className="bg-white p-3.5 rounded-xl border border-gray-100 shadow-sm col-span-2 sm:col-span-2">
+                  <span className="text-gray-500 block mb-1 text-xs">Description</span> 
+                  <span className="font-semibold text-gray-900 text-base">{transaction.item_name}</span>
                 </div>
-                <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm"><span className="text-gray-500 block mb-1 font-medium">Gross Wt.</span> <span className="font-semibold text-gray-900">{transaction.gross_weight}g</span></div>
-                <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm"><span className="text-gray-500 block mb-1 font-medium">Net Wt.</span> <span className="font-semibold text-gray-900">{transaction.net_weight}g</span></div>
-                <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm"><span className="text-gray-500 block mb-1 font-medium">Touch %</span> <span className="font-semibold text-gray-900">{transaction.touch_percentage}%</span></div>
-                
-                <div className="bg-amber-50/50 p-4 rounded-2xl border border-amber-100/50 shadow-sm sm:col-span-3">
-                  <span className="text-gray-500 block mb-1 font-medium">Fine Gold (Cut)</span> 
-                  <span className="font-bold text-amber-600 text-lg">{transaction.fine_gold}g</span>
+
+                <div className="bg-white p-3.5 rounded-xl border border-gray-100 shadow-sm">
+                  <span className="text-gray-500 block mb-1 text-xs">Stamp</span> 
+                  <span className="font-bold text-gray-900 text-base">{stamp || '-'}</span>
+                </div>
+
+                <div className="bg-white p-3.5 rounded-xl border border-gray-100 shadow-sm">
+                  <span className="text-gray-500 block mb-1 text-xs">Gross Wt.</span> 
+                  <span className="font-semibold text-gray-900">{grossWeight.toFixed(3)}g</span>
+                </div>
+
+                <div className="bg-white p-3.5 rounded-xl border border-gray-100 shadow-sm">
+                  <span className="text-gray-500 block mb-1 text-xs">Less Wt.</span> 
+                  <span className="font-semibold text-gray-900">{lessWeight.toFixed(3)}g</span>
+                </div>
+
+                <div className="bg-amber-50/60 p-3.5 rounded-xl border border-amber-200/70 shadow-sm">
+                  <span className="text-amber-800 block mb-1 text-xs font-medium">Net Wt.</span> 
+                  <span className="font-bold text-amber-900 text-base">{netWeight.toFixed(3)}g</span>
+                </div>
+
+                <div className="bg-white p-3.5 rounded-xl border border-gray-100 shadow-sm">
+                  <span className="text-gray-500 block mb-1 text-xs">Touch %</span> 
+                  <span className="font-semibold text-gray-900">{Number(transaction.touch_percentage).toFixed(2)}%</span>
+                </div>
+
+                <div className="bg-amber-100/60 p-3.5 rounded-xl border border-amber-200 shadow-sm">
+                  <span className="text-amber-800 block mb-1 text-xs font-semibold">Fine Gold (Step 1)</span> 
+                  <span className="font-bold text-amber-950 text-base">{fineGold.toFixed(3)}g</span>
+                </div>
+
+                <div className="bg-white p-3.5 rounded-xl border border-gray-100 shadow-sm">
+                  <span className="text-gray-500 block mb-1 text-xs">Gold Rate / g</span> 
+                  <span className="font-semibold text-gray-900">{rateAmount > 0 ? `₹${rateAmount.toLocaleString('en-IN')}` : '-'}</span>
+                </div>
+
+                {oldGoldWeight > 0 && (
+                  <div className="bg-emerald-50 p-3.5 rounded-xl border border-emerald-200 col-span-2 sm:col-span-3 flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <Coins size={16} className="text-emerald-700" />
+                      <div>
+                        <span className="text-xs text-emerald-800 font-semibold block">Old Gold Received (Step 2)</span>
+                        <span className="text-xs text-emerald-600">Subtracted from Fine Gold</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-sm font-bold text-emerald-900">Old Gold: {oldGoldWeight.toFixed(3)}g</span>
+                      <span className="text-xs text-emerald-700 block">Payable Gold: {payableGold.toFixed(3)}g</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Total Row */}
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <div className="bg-gradient-to-r from-amber-500 to-amber-600 p-4 sm:p-5 rounded-2xl text-white shadow-sm flex justify-between items-center">
+                  <div>
+                    <span className="text-xs text-amber-100 uppercase tracking-wider block font-semibold">Total Amount (Step 3)</span>
+                    <span className="text-xs text-amber-100">Payable Gold &times; Rate</span>
+                  </div>
+                  <span className="font-black text-2xl tracking-tight">₹{totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                 </div>
               </div>
             </div>
-            
-            {transaction.image_url && (
-              <div className="bg-white/70 backdrop-blur-md p-6 md:p-8 rounded-3xl shadow-sm border border-amber-100/50 transition-all hover:shadow-md">
-                <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                  <span className="w-1.5 h-6 bg-amber-500 rounded-full"></span>
-                  Image
-                </h2>
-                <div className="flex justify-center">
-                  <img src={transaction.image_url} alt="Item" className="max-w-xs rounded-xl shadow-sm border border-gray-200" />
+
+            {/* Dual Balance Display */}
+            <div className="bg-white/80 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-amber-100/60">
+              <h2 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+                <Scale size={18} className="text-amber-600" />
+                Current Balance Summary (2 Types)
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Type 1: Gold Weight */}
+                <div className="bg-amber-50/50 p-4 rounded-2xl border border-amber-200/80">
+                  <span className="text-xs text-amber-800 font-semibold uppercase tracking-wider block mb-1">
+                    Type 1: Balance Gold Weight
+                  </span>
+                  <div className="flex justify-between items-baseline mb-1">
+                    <span className="text-xl font-bold text-amber-950">{pureGoldDiff.toFixed(3)}g</span>
+                    <span className="text-[11px] text-amber-700">Fine Gold - Old Gold</span>
+                  </div>
+                  {totalCashPaid > 0 && rateAmount > 0 && (
+                    <div className="text-xs text-emerald-800 pt-2 border-t border-amber-200/60 flex justify-between">
+                      <span>After Cash Paid:</span>
+                      <span className="font-semibold">{remainingGoldBalance.toFixed(3)}g due</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Type 2: Cash Amount */}
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                  <span className="text-xs text-slate-600 font-semibold uppercase tracking-wider block mb-1">
+                    Type 2: Balance Amount (₹)
+                  </span>
+                  <div className="flex justify-between items-baseline mb-1">
+                    <span className={`text-xl font-bold ${cashBalanceDue > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                      ₹{cashBalanceDue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </span>
+                    <span className="text-[11px] text-slate-500">Total - Cash Paid</span>
+                  </div>
+                  <div className="text-xs text-slate-600 pt-2 border-t border-slate-200 flex justify-between">
+                    <span>Paid: ₹{totalCashPaid.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                    <span className="font-medium">Total: ₹{totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                  </div>
                 </div>
               </div>
-            )}
-            
-            {transaction.notes && (
-              <div className="bg-white/70 backdrop-blur-md p-6 md:p-8 rounded-3xl shadow-sm border border-amber-100/50 transition-all hover:shadow-md">
-                <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                  <span className="w-1.5 h-6 bg-amber-500 rounded-full"></span>
-                  Additional Notes
-                </h2>
-                <div className="bg-amber-50/50 p-6 rounded-2xl border border-amber-100/50">
-                  <p className="text-gray-700 whitespace-pre-wrap">{transaction.notes}</p>
-                </div>
+            </div>
+
+            {meta.user_notes && (
+              <div className="bg-white/80 p-5 rounded-2xl border border-amber-100 shadow-sm text-sm">
+                <span className="text-xs font-semibold text-gray-500 block mb-1">Notes / Remarks</span>
+                <p className="text-gray-800 whitespace-pre-wrap">{meta.user_notes}</p>
               </div>
             )}
           </div>
 
-          {/* Sidebar */}
+          {/* Right Column: Payments / Sub-Bills Section */}
           <div className="space-y-6">
-            <div className="bg-white/70 backdrop-blur-md p-6 md:p-8 rounded-3xl shadow-sm border border-amber-100/50 transition-all hover:shadow-md">
-              <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                <span className="w-1.5 h-6 bg-amber-500 rounded-full"></span>
-                Money Info
+            <div className="bg-white/80 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-amber-100/60 space-y-6">
+              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <IndianRupee size={18} className="text-amber-600" />
+                Payments &amp; Sub-Bills
               </h2>
-              
-              <div className="space-y-4 bg-gray-50/50 p-6 rounded-2xl border border-gray-100/50">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-500 font-medium">Rate / g</span>
-                  <span className="font-semibold text-gray-900 text-base">₹{transaction.rate_amount ? Number(transaction.rate_amount).toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '-'}</span>
+
+              <div className="space-y-3 bg-amber-50/30 p-4 rounded-2xl border border-amber-100/60 text-sm">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500">Order Total</span>
+                  <span className="font-semibold text-gray-900">₹{totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                 </div>
-                <div className="h-px bg-gray-200/50 w-full"></div>
-                <div className="flex justify-between items-center text-sm font-bold">
-                  <span className="text-gray-900 font-medium">Total Amount</span>
-                  <span className="text-gray-900 text-base">₹{transaction.total_amount ? Number(transaction.total_amount).toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '-'}</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500">Total Paid</span>
+                  <span className="font-bold text-emerald-600">₹{totalCashPaid.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div className="h-px bg-amber-200/50"></div>
+                <div className="flex justify-between items-center text-base font-bold">
+                  <span className="text-gray-900">Balance Due</span>
+                  <span className={cashBalanceDue > 0 ? 'text-red-600' : 'text-emerald-700'}>
+                    ₹{cashBalanceDue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </span>
                 </div>
               </div>
-            </div>
-            
-            {(transaction.stock_deductions || transaction.stock_item_id) && (
-              <div className="bg-white/70 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-amber-100/50 transition-all hover:shadow-md">
-                <h2 className="font-bold text-gray-900 mb-3 flex items-center gap-2 text-sm">
-                  <History size={16} className="text-amber-500" />
-                  Stock Details
-                </h2>
-                <p className="text-sm text-gray-600 mb-4">This transaction deducted weight from stock blocks.</p>
-                
-                {transaction.stock_deductions && Array.isArray(transaction.stock_deductions) ? (
-                  <div className="space-y-3">
-                    {transaction.stock_deductions.map((d: any, idx: number) => (
-                      <div key={idx} className="bg-amber-50/50 p-3 rounded-xl border border-amber-100 flex flex-col gap-2 text-sm">
-                        <div className="flex justify-between text-gray-700">
-                          <span className="font-medium text-xs uppercase tracking-wider text-gray-500">Gross</span>
-                          <span className="font-semibold">{d.gross}g</span>
-                        </div>
-                        <div className="flex justify-between text-gray-700">
-                          <span className="font-medium text-xs uppercase tracking-wider text-gray-500">Net</span>
-                          <span className="font-semibold">{d.net}g</span>
-                        </div>
-                        <Link href={`/stock/${d.stock_id}`} className="block w-full py-1.5 mt-1 bg-white border border-amber-200 text-amber-700 text-center rounded-lg text-xs font-semibold hover:bg-amber-100 transition-colors">
-                          View Block
-                        </Link>
-                      </div>
-                    ))}
-                  </div>
+
+              {/* Add Payment / Sub-Bill Form */}
+              <div className="bg-amber-50/50 p-4 rounded-2xl border border-amber-200/70">
+                <h3 className="font-semibold text-amber-900 mb-3 flex items-center gap-1.5 text-xs uppercase tracking-wider">
+                  <PlusCircle size={15} /> Add Sub-Bill / Payment
+                </h3>
+                <WholesalePaymentForm transactionId={transaction.id} />
+              </div>
+
+              {/* Payment History List */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <History size={14} /> Sub-Bill Transactions ({payments.length})
+                </div>
+
+                {payments.length === 0 ? (
+                  <p className="text-xs text-gray-500 text-center py-4 bg-gray-50 rounded-xl">
+                    No sub-bills or payments recorded yet.
+                  </p>
                 ) : (
-                  <Link href={`/stock/${transaction.stock_item_id}`} className="block w-full py-2 bg-amber-50 text-amber-700 text-center rounded-xl text-sm font-semibold hover:bg-amber-100 transition-colors">
-                    View Stock Block
-                  </Link>
+                  <ul className="space-y-2.5">
+                    {payments.map((p, idx) => (
+                      <li key={p.id || idx} className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm text-xs space-y-1">
+                        <div className="flex justify-between font-bold text-gray-900 text-sm">
+                          <span>₹{Number(p.amount_paid).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                          <span className="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-semibold">
+                            {p.payment_method}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-gray-500 text-[11px]">
+                          <span>{new Date(p.payment_date).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                          {p.notes && <span className="text-gray-700 italic">{p.notes}</span>}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </div>
-            )}
+            </div>
           </div>
         </div>
       </div>

@@ -2,6 +2,7 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { parseWholesaleNotes, serializeWholesaleNotes } from '@/utils/wholesaleNotes'
 
 export async function addCustomerAndTransaction(formData: FormData) {
   const supabase = await createClient()
@@ -325,16 +326,31 @@ export async function addWholesaleTransaction(formData: FormData) {
   const address = formData.get('address') as string
 
   const itemName = (formData.get('item_name') as string)?.trim() || 'Gold Item'
+  const stamp = (formData.get('stamp') as string)?.trim() || ''
   const grossWeight = parseFloat(formData.get('gross_weight') as string) || 0
-  const netWeight = parseFloat(formData.get('net_weight') as string) || 0
+  const lessWeight = parseFloat(formData.get('less_weight') as string) || 0
+  const netWeight = parseFloat(formData.get('net_weight') as string) || Math.max(0, grossWeight - lessWeight)
   const touchPercentage = parseFloat(formData.get('touch_percentage') as string) || 0
   const rateAmount = parseFloat(formData.get('rate_amount') as string) || 0
-  const totalAmount = parseFloat(formData.get('total_amount') as string) || 0
+  const oldGoldWeight = parseFloat(formData.get('old_gold_weight') as string) || 0
+
+  // Calculation:
+  // 1. net wt * touch (fine gold)
+  // 2. fine gold - old gold weight
+  // 3. payable gold * rate = total amount
+  const fineGold = (netWeight * touchPercentage) / 100
+  const payableGold = Math.max(0, fineGold - oldGoldWeight)
+  const calculatedTotalAmount = payableGold * rateAmount
+  const totalAmount = parseFloat(formData.get('total_amount') as string) || calculatedTotalAmount
+
+  const cashPaid = parseFloat(formData.get('cash_paid') as string || formData.get('amount_paid') as string || '0') || 0
+  const paymentMethod = (formData.get('payment_method') as string) || 'Cash'
+
   const stonesWeight = parseFloat(formData.get('stones_weight') as string) || 0
   const stonesPrice = parseFloat(formData.get('stones_price') as string) || 0
   const beadsWeight = parseFloat(formData.get('beads_weight') as string) || 0
   const extraBeads = parseFloat(formData.get('extra_beads') as string) || 0
-  const transactionType = formData.get('transaction_type') as string || 'SALE'
+  const transactionType = formData.get('transaction_type') as string || 'RECEIPT'
   const stockItemId = formData.get('stock_item_id') as string
   const stockDeductionsRaw = formData.get('stock_deductions') as string
   let stockDeductions: { stock_id: string, gross: number, net: number }[] = []
@@ -342,7 +358,24 @@ export async function addWholesaleTransaction(formData: FormData) {
     if (stockDeductionsRaw) stockDeductions = JSON.parse(stockDeductionsRaw)
   } catch(e) {}
   
-  const notes = formData.get('notes') as string || ''
+  const userNotes = (formData.get('notes') as string)?.trim() || ''
+
+  // Pack wholesale metadata into structured notes
+  const initialPayments = cashPaid > 0 ? [{
+    id: Date.now().toString(),
+    amount_paid: cashPaid,
+    payment_method: paymentMethod,
+    payment_date: new Date().toISOString()
+  }] : []
+
+  const serializedNotes = serializeWholesaleNotes({
+    stamp,
+    less_weight: lessWeight,
+    old_gold_weight: oldGoldWeight,
+    cash_paid: cashPaid,
+    payments: initialPayments,
+    user_notes: userNotes
+  })
 
   let imageUrl = null;
   const imageFile = formData.get('image') as File | null;
@@ -367,8 +400,6 @@ export async function addWholesaleTransaction(formData: FormData) {
     return { error: customerError?.message || 'Failed to create customer' }
   }
 
-  const fineGold = (netWeight * touchPercentage) / 100
-
   // Insert Wholesale Transaction
   const { data: transaction, error: transactionError } = await supabase
     .from('wholesale_transactions')
@@ -389,7 +420,7 @@ export async function addWholesaleTransaction(formData: FormData) {
       image_url: imageUrl,
       stock_item_id: stockItemId || null,
       stock_deductions: stockDeductions.length > 0 ? stockDeductions : null,
-      notes: notes
+      notes: serializedNotes
     })
     .select('id')
     .single()
@@ -410,7 +441,6 @@ export async function addWholesaleTransaction(formData: FormData) {
       }
     }
   } else if (stockItemId && transactionType === 'SALE') {
-    // Fallback for old single stock selection logic just in case
     const { data: stockItem } = await supabase.from('stock_items').select('*').eq('id', stockItemId).single()
     if (stockItem) {
       await supabase.from('stock_items').update({ 
@@ -423,6 +453,60 @@ export async function addWholesaleTransaction(formData: FormData) {
   revalidatePath('/')
   revalidatePath('/stock')
   return { success: true, transactionId: transaction.id }
+}
+
+export async function addWholesalePayment(formData: FormData) {
+  const supabase = await createClient()
+
+  const transactionId = formData.get('transaction_id') as string
+  const amountPaid = parseFloat(formData.get('amount_paid') as string) || 0
+  const paymentMethod = (formData.get('payment_method') as string) || 'Cash'
+  const paymentNotes = (formData.get('notes') as string)?.trim() || ''
+
+  if (!transactionId || amountPaid <= 0) {
+    return { error: 'Invalid payment amount' }
+  }
+
+  const { data: tx, error: fetchErr } = await supabase
+    .from('wholesale_transactions')
+    .select('id, notes, total_amount')
+    .eq('id', transactionId)
+    .single()
+
+  if (fetchErr || !tx) {
+    return { error: fetchErr?.message || 'Wholesale transaction not found' }
+  }
+
+  const meta = parseWholesaleNotes(tx.notes)
+  const newPayment = {
+    id: Date.now().toString(),
+    amount_paid: amountPaid,
+    payment_method: paymentMethod,
+    payment_date: new Date().toISOString(),
+    notes: paymentNotes
+  }
+
+  const updatedPayments = [...(meta.payments || []), newPayment]
+  const updatedCashPaid = updatedPayments.reduce((sum, p) => sum + Number(p.amount_paid || 0), 0)
+
+  meta.payments = updatedPayments
+  meta.cash_paid = updatedCashPaid
+
+  const updatedNotes = serializeWholesaleNotes(meta)
+
+  const { error: updateErr } = await supabase
+    .from('wholesale_transactions')
+    .update({ notes: updatedNotes })
+    .eq('id', transactionId)
+
+  if (updateErr) {
+    return { error: updateErr.message }
+  }
+
+  revalidatePath(`/wholesale-transaction/${transactionId}`)
+  revalidatePath(`/wholesale-receipt/${transactionId}`)
+  revalidatePath('/')
+  return { success: true }
 }
 
 export async function createDeliveryChallan(formData: FormData) {

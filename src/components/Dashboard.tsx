@@ -191,7 +191,7 @@ export function Dashboard({
                           </div>
                         )}
                       </td>
-                      <td className="p-5 font-bold text-gray-900 tracking-tight">₹{tx.total_amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                      <td className="p-5 font-bold text-gray-900 tracking-tight">₹{(Number(tx.total_amount) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                       <td className="p-5 text-gray-500 text-sm font-medium">
                         {new Date(tx.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </td>
@@ -255,7 +255,7 @@ export function Dashboard({
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="font-bold text-gray-900">₹{tx.total_amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                      <div className="font-bold text-gray-900">₹{(Number(tx.total_amount) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
                       <div className="text-xs font-medium text-gray-500">{new Date(tx.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
                     </div>
                   </div>

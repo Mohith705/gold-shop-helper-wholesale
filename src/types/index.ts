@@ -52,6 +52,14 @@ export type StockItem = {
   updated_at: string;
 };
 
+export type WholesalePayment = {
+  id: string;
+  amount_paid: number;
+  payment_method: string;
+  payment_date: string;
+  notes?: string;
+};
+
 export type WholesaleTransaction = {
   id: string;
   customer_id: string;
@@ -60,6 +68,11 @@ export type WholesaleTransaction = {
   net_weight: number;
   touch_percentage: number;
   fine_gold: number;
+  stamp?: string | number | null;
+  less_weight?: number;
+  old_gold_weight?: number;
+  cash_paid?: number;
+  payments?: WholesalePayment[];
   stones_weight?: number;
   stones_price?: number;
   beads_weight?: number;
@@ -69,6 +82,7 @@ export type WholesaleTransaction = {
   transaction_type: 'SALE' | 'RECEIPT';
   invoice_number?: number;
   image_url?: string;
+  notes?: string | null;
   created_at: string;
   customers?: Customer;
 };
