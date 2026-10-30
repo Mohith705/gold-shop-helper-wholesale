@@ -400,30 +400,53 @@ export async function addWholesaleTransaction(formData: FormData) {
     return { error: customerError?.message || 'Failed to create customer' }
   }
 
-  // Insert Wholesale Transaction
-  const { data: transaction, error: transactionError } = await supabase
+  // Insert Wholesale Transaction (supporting dedicated DB columns with fallback)
+  const insertPayload: any = {
+    customer_id: customer.id,
+    item_name: itemName,
+    gross_weight: grossWeight,
+    net_weight: netWeight,
+    touch_percentage: touchPercentage,
+    fine_gold: fineGold,
+    stones_weight: stonesWeight,
+    stones_price: stonesPrice,
+    beads_weight: beadsWeight,
+    extra_beads: extraBeads,
+    rate_amount: rateAmount,
+    total_amount: totalAmount,
+    transaction_type: transactionType,
+    image_url: imageUrl,
+    stock_item_id: stockItemId || null,
+    stock_deductions: stockDeductions.length > 0 ? stockDeductions : null,
+    notes: serializedNotes,
+    stamp: stamp || null,
+    less_weight: lessWeight,
+    old_gold_weight: oldGoldWeight,
+    cash_paid: cashPaid
+  }
+
+  let { data: transaction, error: transactionError } = await supabase
     .from('wholesale_transactions')
-    .insert({
-      customer_id: customer.id,
-      item_name: itemName,
-      gross_weight: grossWeight,
-      net_weight: netWeight,
-      touch_percentage: touchPercentage,
-      fine_gold: fineGold,
-      stones_weight: stonesWeight,
-      stones_price: stonesPrice,
-      beads_weight: beadsWeight,
-      extra_beads: extraBeads,
-      rate_amount: rateAmount,
-      total_amount: totalAmount,
-      transaction_type: transactionType,
-      image_url: imageUrl,
-      stock_item_id: stockItemId || null,
-      stock_deductions: stockDeductions.length > 0 ? stockDeductions : null,
-      notes: serializedNotes
-    })
+    .insert(insertPayload)
     .select('id')
     .single()
+
+  // Graceful fallback if user hasn't run the ALTER TABLE query in Supabase yet
+  if (transactionError && transactionError.message?.toLowerCase().includes('column')) {
+    delete insertPayload.stamp
+    delete insertPayload.less_weight
+    delete insertPayload.old_gold_weight
+    delete insertPayload.cash_paid
+
+    const retry = await supabase
+      .from('wholesale_transactions')
+      .insert(insertPayload)
+      .select('id')
+      .single()
+
+    transaction = retry.data
+    transactionError = retry.error
+  }
 
   if (transactionError || !transaction) {
     return { error: transactionError?.message || 'Failed to create transaction' }
@@ -494,10 +517,20 @@ export async function addWholesalePayment(formData: FormData) {
 
   const updatedNotes = serializeWholesaleNotes(meta)
 
-  const { error: updateErr } = await supabase
+  const updatePayload: any = { notes: updatedNotes, cash_paid: updatedCashPaid }
+  let { error: updateErr } = await supabase
     .from('wholesale_transactions')
-    .update({ notes: updatedNotes })
+    .update(updatePayload)
     .eq('id', transactionId)
+
+  if (updateErr && updateErr.message?.toLowerCase().includes('column')) {
+    delete updatePayload.cash_paid
+    const retry = await supabase
+      .from('wholesale_transactions')
+      .update(updatePayload)
+      .eq('id', transactionId)
+    updateErr = retry.error
+  }
 
   if (updateErr) {
     return { error: updateErr.message }
