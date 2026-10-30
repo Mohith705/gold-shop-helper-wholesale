@@ -482,17 +482,32 @@ export async function addWholesalePayment(formData: FormData) {
   const supabase = await createClient()
 
   const transactionId = formData.get('transaction_id') as string
-  const amountPaid = parseFloat(formData.get('amount_paid') as string) || 0
-  const paymentMethod = (formData.get('payment_method') as string) || 'Cash'
+  const paymentType = ((formData.get('payment_type') as string) || 'MONEY').toUpperCase()
+  const paymentMethod = (formData.get('payment_method') as string) || (paymentType === 'GOLD' ? 'Old Gold' : 'Cash')
+  const isGoldPayment = paymentType === 'GOLD' || paymentMethod.toLowerCase().includes('gold')
+
+  const goldWeight = parseFloat(formData.get('gold_weight') as string) || (isGoldPayment ? parseFloat(formData.get('amount_paid') as string) || 0 : 0)
+  let amountPaid = parseFloat(formData.get('amount_paid') as string) || 0
+  let goldRate = parseFloat(formData.get('gold_rate') as string) || 0
   const paymentNotes = (formData.get('notes') as string)?.trim() || ''
 
-  if (!transactionId || amountPaid <= 0) {
-    return { error: 'Invalid payment amount' }
+  if (!transactionId) {
+    return { error: 'Invalid transaction' }
+  }
+
+  if (isGoldPayment) {
+    if (goldWeight <= 0) {
+      return { error: 'Please enter a valid gold weight (e.g. 3.372g)' }
+    }
+  } else {
+    if (amountPaid <= 0) {
+      return { error: 'Please enter a valid payment amount (₹)' }
+    }
   }
 
   const { data: tx, error: fetchErr } = await supabase
     .from('wholesale_transactions')
-    .select('id, notes, total_amount')
+    .select('id, notes, total_amount, rate_amount')
     .eq('id', transactionId)
     .single()
 
@@ -500,24 +515,39 @@ export async function addWholesalePayment(formData: FormData) {
     return { error: fetchErr?.message || 'Wholesale transaction not found' }
   }
 
+  // If gold payment, calculate money equivalent if not explicitly set
+  if (isGoldPayment) {
+    if (!goldRate) {
+      goldRate = Number(tx.rate_amount) || 0
+    }
+    if ((amountPaid <= 0 || !formData.get('gold_weight')) && goldRate > 0) {
+      amountPaid = parseFloat((goldWeight * goldRate).toFixed(2))
+    }
+  }
+
   const meta = parseWholesaleNotes(tx.notes)
   const newPayment = {
     id: Date.now().toString(),
+    payment_type: isGoldPayment ? ('GOLD' as const) : ('MONEY' as const),
     amount_paid: amountPaid,
+    gold_weight: isGoldPayment ? goldWeight : 0,
+    gold_rate: goldRate || undefined,
     payment_method: paymentMethod,
     payment_date: new Date().toISOString(),
     notes: paymentNotes
   }
 
   const updatedPayments = [...(meta.payments || []), newPayment]
-  const updatedCashPaid = updatedPayments.reduce((sum, p) => sum + Number(p.amount_paid || 0), 0)
+  const totalMoneyPaid = updatedPayments
+    .filter(p => p.payment_type !== 'GOLD')
+    .reduce((sum, p) => sum + Number(p.amount_paid || 0), 0)
 
   meta.payments = updatedPayments
-  meta.cash_paid = updatedCashPaid
+  meta.cash_paid = totalMoneyPaid
 
   const updatedNotes = serializeWholesaleNotes(meta)
 
-  const updatePayload: any = { notes: updatedNotes, cash_paid: updatedCashPaid }
+  const updatePayload: any = { notes: updatedNotes, cash_paid: totalMoneyPaid }
   let { error: updateErr } = await supabase
     .from('wholesale_transactions')
     .update(updatePayload)

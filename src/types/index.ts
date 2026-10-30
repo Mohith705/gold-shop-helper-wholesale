@@ -54,7 +54,10 @@ export type StockItem = {
 
 export type WholesalePayment = {
   id: string;
+  payment_type?: 'MONEY' | 'GOLD';
   amount_paid: number;
+  gold_weight?: number;
+  gold_rate?: number;
   payment_method: string;
   payment_date: string;
   notes?: string;

@@ -265,11 +265,10 @@ export function Dashboard({
                       <div className="text-gray-700 font-medium">{tx.item_name} {activeTab === 'RETAIL' && tx.is_lump_sum && <span className="ml-1 inline-block px-1.5 py-0.5 bg-gray-200 text-gray-600 rounded text-[9px] uppercase font-bold tracking-wider">Lump Sum</span>}</div>
                       <div className="text-gray-500 font-semibold">{activeTab === 'RETAIL' ? (tx.is_lump_sum ? '-' : `${tx.weight_grams}g`) : `${tx.gross_weight}g Gross`}</div>
                     </div>
-                    {activeTab === 'WHOLESALE' && (Number(tx.stones_weight) > 0 || Number(tx.beads_weight) > 0 || Number(tx.extra_beads) > 0) && (
-                      <div className="text-[11px] text-gray-500 font-medium text-right flex justify-end gap-2">
-                        {Number(tx.stones_weight) > 0 && <span>S: {tx.stones_weight}g</span>}
-                        {Number(tx.beads_weight) > 0 && <span>B: {tx.beads_weight}g</span>}
-                        {Number(tx.extra_beads) > 0 && <span>Ex.B: {tx.extra_beads}g</span>}
+                    {activeTab === 'WHOLESALE' && (
+                      <div className="text-[11px] text-gray-600 font-medium flex justify-between items-center pt-0.5">
+                        <span>Net: {tx.net_weight}g &bull; Touch: {tx.touch_percentage}%</span>
+                        <span className="text-amber-800 font-bold">Fine: {Number(tx.fine_gold).toFixed(3)}g</span>
                       </div>
                     )}
                   </div>

@@ -26,12 +26,25 @@ export function parseWholesaleNotes(notesRaw?: string | null): WholesaleMetadata
     try {
       const parsed = JSON.parse(trimmed)
       if (parsed && typeof parsed === 'object') {
+        const payments: WholesalePayment[] = Array.isArray(parsed.payments)
+          ? parsed.payments.map((p: any) => ({
+              id: p.id || Date.now().toString(),
+              payment_type: p.payment_type || (Number(p.gold_weight) > 0 || String(p.payment_method || '').toLowerCase().includes('gold') ? 'GOLD' : 'MONEY'),
+              amount_paid: Number(p.amount_paid) || 0,
+              gold_weight: Number(p.gold_weight) || 0,
+              gold_rate: Number(p.gold_rate) || 0,
+              payment_method: p.payment_method || 'Cash',
+              payment_date: p.payment_date || new Date().toISOString(),
+              notes: p.notes || ''
+            }))
+          : []
+
         return {
           stamp: parsed.stamp !== undefined && parsed.stamp !== null ? String(parsed.stamp) : '',
           less_weight: Number(parsed.less_weight) || 0,
           old_gold_weight: Number(parsed.old_gold_weight) || 0,
           cash_paid: Number(parsed.cash_paid) || 0,
-          payments: Array.isArray(parsed.payments) ? parsed.payments : [],
+          payments,
           user_notes: parsed.user_notes || ''
         }
       }
