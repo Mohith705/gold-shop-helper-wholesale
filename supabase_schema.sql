@@ -87,8 +87,12 @@ ALTER TABLE wholesale_transactions ADD COLUMN image_url TEXT;
 --   "user_notes": "..."
 -- }
 
--- Optional: If you prefer dedicated SQL columns in Supabase:
--- ALTER TABLE wholesale_transactions ADD COLUMN IF NOT EXISTS stamp VARCHAR(50);
--- ALTER TABLE wholesale_transactions ADD COLUMN IF NOT EXISTS less_weight NUMERIC(10, 3) DEFAULT 0;
--- ALTER TABLE wholesale_transactions ADD COLUMN IF NOT EXISTS old_gold_weight NUMERIC(10, 3) DEFAULT 0;
--- ALTER TABLE wholesale_transactions ADD COLUMN IF NOT EXISTS cash_paid NUMERIC(12, 2) DEFAULT 0;
+-- Wholesale SQL queries for Supabase SQL Editor:
+ALTER TABLE wholesale_transactions ADD COLUMN IF NOT EXISTS notes TEXT;
+ALTER TABLE wholesale_transactions ADD COLUMN IF NOT EXISTS stamp VARCHAR(50);
+ALTER TABLE wholesale_transactions ADD COLUMN IF NOT EXISTS less_weight NUMERIC(10, 3) DEFAULT 0;
+ALTER TABLE wholesale_transactions ADD COLUMN IF NOT EXISTS old_gold_weight NUMERIC(10, 3) DEFAULT 0;
+ALTER TABLE wholesale_transactions ADD COLUMN IF NOT EXISTS cash_paid NUMERIC(12, 2) DEFAULT 0;
+ALTER TABLE wholesale_transactions ADD COLUMN IF NOT EXISTS stock_deductions JSONB;
+ALTER TABLE wholesale_transactions ADD COLUMN IF NOT EXISTS stock_item_id UUID REFERENCES stock_items(id) ON DELETE SET NULL;
+
